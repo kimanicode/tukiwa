@@ -10,6 +10,11 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        "periwinkle":'#A6B1E1',
+        'new-red':'#FF0022',
+        
+
+
       },
     },
   },

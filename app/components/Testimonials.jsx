@@ -21,29 +21,12 @@ const Testimonials = () => {
           role: "Education Fundraiser Beneficiary",
           message: "Thanks to Tukiwa, my daughter got her school fees covered in time. The transparency and updates reassured donors, making them confident in contributing."
         },
-        {
-            id:4,
-          name: "Samuel Njoroge",
-          role: "Community Leader",
-          message: "Our church fundraising committee used to struggle with tracking contributions. Tukiwa changed everything! Now, we get real-time updates and automated pledge reminders."
-        },
-        {
-            id:5,
-          name: "Jane Otieno",
-          role: "Emergency Aid Organizer",
-          message: "During a crisis, every second counts. Tukiwa made it possible to collect donations FAST. The AI-driven insights helped us hit our target in record time!"
-        },
-        {
-            id:6,
-          name: "Kevin Mutua",
-          role: "Tech Enthusiast & Early Adopter",
-          message: "This is the best fundraising innovation I’ve seen! AI-powered tracking, real-time updates, and WhatsApp integration? Game-changer!"
-        }
+        
       ];
       
   return (
-    <div className='w-full bg-white  p-20  '>
-        <h1 className="text-center p-5 md:p-10 text-base-100 md:text-4xl">
+    <div className='w-full bg-white  md:p-20  p-10 '>
+        <h1 className="text-center p-5 md:p-10 text-base-100 md:text-4xl text-2xl">
             What People Are Saying
         </h1>
 
@@ -63,6 +46,18 @@ const Testimonials = () => {
                     <div className="card-actions flex flex-col ">
                     <h2 className="card-title">{testimonial.name}</h2>
                     <span className="italic">{testimonial.role}</span>
+
+                    <div>
+                                        <div className="rating">
+                      <input type="radio" name="rating-4" className="mask mask-star-2 bg-white" aria-label="1 star" />
+                      <input type="radio" name="rating-4" className="mask mask-star-2 bg-white" aria-label="2 star" defaultChecked />
+                      <input type="radio" name="rating-4" className="mask mask-star-2 bg-white" aria-label="3 star" />
+                      <input type="radio" name="rating-4" className="mask mask-star-2 bg-white" aria-label="4 star" />
+                      <input type="radio" name="rating-4" className="mask mask-star-2 bg-white" aria-label="5 star" />
+                 </div>
+                    </div>
+
+                    
 
                     </div>
                 </div>

@@ -45,8 +45,8 @@ const Footer = () => {
     </p>
   </aside>
   <nav className="md:place-self-center md:justify-self-end">
-    <div className="grid grid-flow-col gap-4">
-      <a>
+    <div className="grid grid-flow-col gap-4 ">
+      <a className='text-white'>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"

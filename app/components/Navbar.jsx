@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from "next/link";
 
 const Navbar = () => {
   return (
@@ -11,33 +12,33 @@ const Navbar = () => {
       </div>
       <ul
         tabIndex={0}
-        className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-        <li><a>Item 1</a></li>
+        className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow text-white">
+        <li><Link href='/how'>How It Works</Link></li>
         <li>
-          <a className=''>Parent</a>
+          <a className=''>Fundraisers</a>
           <ul className="p-2">
             <li><a>Submenu 1</a></li>
             <li><a>Submenu 2</a></li>
           </ul>
         </li>
-        <li><a>Item 3</a></li>
+        <li><Link href='/pricing'>Pricing</Link></li>
       </ul>
     </div>
-    <a className="bg-gradient-to-r from-blue-600 to-green-500 inline-block text-transparent bg-clip-text  font-bold text-2xl">Tukiwa</a>
+    <Link href= '/' className="bg-gradient-to-r from-blue-600 to-green-500 inline-block text-transparent bg-clip-text  font-bold text-2xl">Tukiwa</Link>
   </div>
   <div className="navbar-center hidden lg:flex">
     <ul className="menu menu-horizontal px-1">
-      <li><a>About Tukiwa</a></li>
+      <li><Link href='/how' className='hover:text-new-red'>How It Works</Link></li>
       <li>
         <details>
-          <summary>Fundraisers</summary>
+          <summary className='hover:text-new-red'>Fundraisers</summary>
           <ul className="p-2 text-white">
             <li><a>Submenu 1</a></li>
             <li><a>Submenu 2</a></li>
           </ul>
         </details>
       </li>
-      <li><a>How It Works</a></li>
+      <li><Link  href='/pricing' className='hover:text-new-red'>Pricing</Link></li>
     </ul>
   </div>
   <div className="navbar-end md:flex hidden">
