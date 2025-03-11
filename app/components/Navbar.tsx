@@ -3,8 +3,8 @@ import Link from "next/link";
 
 const Navbar = () => {
   return (
-    <div>
-      <div className="navbar bg-white text-base-100 shadow-sm">
+    <div className=''>
+      <div className="navbar md:px-20 bg-gradient-to-r from-white to-[#f3f4f6] text-base-100 shadow-sm">
   <div className="navbar-start">
     <div className="dropdown">
       <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -24,7 +24,7 @@ const Navbar = () => {
         <li><Link href='/pricing'>Pricing</Link></li>
       </ul>
     </div>
-    <Link href= '/' className="bg-gradient-to-r from-blue-600 to-green-500 inline-block text-transparent bg-clip-text  font-bold text-2xl">Tukiwa</Link>
+    <Link href= '/' className="bg-gradient-to-r from-new-red to-periwinkle inline-block text-transparent bg-clip-text  font-bold text-2xl">Tukiwa</Link>
   </div>
   <div className="navbar-center hidden lg:flex">
     <ul className="menu menu-horizontal px-1">

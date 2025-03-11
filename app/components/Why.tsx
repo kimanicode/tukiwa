@@ -44,13 +44,13 @@ const why = [
 ];
   
   return (
-    <div className='w-full bg-white  md:p-20  p-10 '>
-        <h2 className='text-center p-5 md:p-10 text-base-100 md:text-4xl text-2xl'>Why Tukiwa</h2> 
+    <div className='w-full  bg-gradient-to-r from-white to-[#f3f4f6]  md:p-20  p-10 '>
+        <h2 className='text-4xl md:text-6xl bg-gradient-to-r from-new-red to-periwinkle text-transparent bg-clip-text text-center'>Why Tukiwa</h2> 
 
       <div className="flex gap-10 md:flex-row flex-col items-center">
 
       <div className="flex justify-center items-center md:w-full md:min-h-screen h-1/2 p-10 ">
-  <div className="mockup-phone border-green-300  ">
+  <div className="mockup-phone border-new-red ">
     <div className="mockup-phone-camera "></div>
     <div className="mockup-phone-display">
       <img
@@ -68,9 +68,9 @@ const why = [
             why.map( (reason)=>{
                 
                 return(
-                    <div className="card hover:bg-gradient-to-br from-blue-600 via-teal-600 to-green-300 text-base-100 bg-slate-100 hover:text-primary-content md:basis-[30%] basis-full shadow-2xl"  key={reason.id}>
+                    <div className="card hover:bg-base-100 hover:text-white text-base-100 bg-slate-100 hover:text-primary-content md:basis-[30%] basis-full shadow-2xl"  key={reason.id}>
                 <div className="card-body">
-                    <p className="text-green-300  ">
+                    <p className="text-new-red ">
                         {reason.icon}
                     </p>
 

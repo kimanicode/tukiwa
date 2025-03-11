@@ -29,7 +29,7 @@ const Pricing = () => {
   };
 
   return (
-    <div className='w-full bg-white  md:p-20  p-10'>
+    <div className='w-full  bg-gradient-to-b from-white to-[#f3f4f6]  md:p-20  p-10'>
 
       <div className='py-10 '>
         <p className='text-4xl md:text-6xl bg-gradient-to-r from-new-red to-periwinkle inline-block text-transparent bg-clip-text'>
@@ -80,10 +80,10 @@ const Pricing = () => {
                 <div className="stat-value text-secondary py-4">
                   <input 
                     type="text"   
-                    value={formatWithCommas(amount)}
+                    value={`KSH ${formatWithCommas(amount)}`}
                     onChange={handleChange}
                     placeholder="Enter Amount Here" 
-                    className="input text-white" 
+                    className="input text-white bg-base-100" 
                   />
                 </div>
               </div>

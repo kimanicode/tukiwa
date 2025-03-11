@@ -25,8 +25,8 @@ const Testimonials = () => {
       ];
       
   return (
-    <div className='w-full bg-white  md:p-20  p-10 '>
-        <h1 className="text-center p-5 md:p-10 text-base-100 md:text-4xl text-2xl">
+    <div className='w-full  bg-gradient-to-r from-white to-[#f3f4f6]  md:p-20  p-10 '>
+        <h1 className="text-4xl md:text-6xl bg-gradient-to-r from-new-red to-periwinkle text-transparent bg-clip-text text-center md:py-10">
             What People Are Saying
         </h1>
 
@@ -35,7 +35,7 @@ const Testimonials = () => {
             testimonials.map( (testimonial)=>{
                 
                 return(
-                    <div className="card bg-gradient-to-br from-blue-600 via-teal-600 to-green-300 text-primary-content md:basis-[30%] basis-full shadow-2xl"  key={testimonial.id}>
+                    <div className=" bg-base-300 rounded-xl hover:bg-base-100 text-primary-content md:basis-[30%] basis-full shadow-2xl"  key={testimonial.id}>
                 <div className="card-body">
                     <h2 className="text-white">
                         <Quote />
