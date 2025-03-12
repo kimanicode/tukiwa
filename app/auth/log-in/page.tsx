@@ -22,7 +22,7 @@ const Login = () => {
             <input type="password" placeholder="••••••••" className="input input-bordered w-full" required />
           </div>
 
-          <div className="flex justify-between w-full text-sm text-gray-500 mt-1">
+          <div className="flex justify-between w-full text-sm text-new-red text-center px-2 mt-1">
             <a href="#" className="hover:underline">Forgot password?</a>
           </div>
 
@@ -34,7 +34,7 @@ const Login = () => {
         </form>
 
         <p className="text-sm text-center text-gray-500 4">
-          Don't have an account? <a className="text-blue-600 hover:underline" href="/signup">Sign Up</a>
+          Don't have an account? <a className="text-blue-600 hover:underline" href="/auth/sign-up">Sign Up</a>
         </p>
       </div>
     </div>
