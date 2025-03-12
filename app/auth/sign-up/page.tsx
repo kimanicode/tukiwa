@@ -3,8 +3,8 @@ import { motion } from "framer-motion";
 
 const Signup = () => {
   return (
-    <div className="flex justify-center items-center py-5 bg-gradient-to-b from-white to-gray-100 px-4">
-      <div className="w-full max-w-md bg-white shadow-xl rounded-xl p-6 flex flex-col items-center">
+    <div className="flex justify-center items-center py-5 min-h-screen bg-gradient-to-b  from-white to-gray-100 px-4">
+      <div className="w-full max-w-md bg-white shadow-xl rounded-xl p-6 flex flex-col items-center  min-h-[60vh]">
         <h2 className="text-3xl font-bold text-center text-gray-800">Sign Up</h2>
         <p className="text-sm text-center text-gray-500 mt-2">Create an account to get started</p>
 
