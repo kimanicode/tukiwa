@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from 'next/navigation';
 
 const Navbar = () => {
-  const router= useRouter():
+  const router= useRouter();
   return (
     <div className=''>
       <div className="navbar md:px-20 bg-gradient-to-r from-white to-[#f3f4f6] text-base-100 shadow-sm">
