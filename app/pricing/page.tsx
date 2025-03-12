@@ -8,17 +8,17 @@ const Pricing = () => {
   let newAmount = amount - transactionFee;
 
   // Format the number with commas
-  const formatWithCommas = (value) => {
+  const formatWithCommas = (value: number | string): string => {
     return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   // Format currency for display
-  const formatCurrency = (value) => {
+  const formatCurrency = (value: number | string): string => {
     return new Intl.NumberFormat("en-KE", {
       style: "currency",
       currency: "KES",
       minimumFractionDigits: 0,
-    }).format(value);
+    }).format((Number(value))
   };
 
   // Handle input change
