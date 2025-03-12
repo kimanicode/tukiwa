@@ -1,7 +1,9 @@
-import React from 'react'
+"use client"
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 const Navbar = () => {
+  const router= useRouter():
   return (
     <div className=''>
       <div className="navbar md:px-20 bg-gradient-to-r from-white to-[#f3f4f6] text-base-100 shadow-sm">
@@ -42,7 +44,7 @@ const Navbar = () => {
     </ul>
   </div>
   <div className="navbar-end md:flex hidden">
-    <a className="btn">Sign In</a>
+    <button className="btn"  onClick={() => router.push("/auth/sign-up")}>Sign In </button>
   </div>
 </div>
     </div>

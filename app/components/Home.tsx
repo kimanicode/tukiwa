@@ -1,6 +1,8 @@
-import React from 'react'
+"use client"
+import { useRouter } from 'next/navigation'
 
 const Home = () => {
+  const router = useRouter()
   return (
     <div>
  <div className="hero  bg-gradient-to-r from-white to-[#f3f4f6] md:min-h-screen min-h-fit">
@@ -10,7 +12,7 @@ const Home = () => {
       <p className="py-6 text-base-100 md:text-xl">
       Let your Fundraiser  run on <span className=''>Autopiliot</span>
       </p>
-      <button className="btn  rounded-full bg-base-200 text-white font-light  md:w-1/3 border-2 border-white py-5 hover:border-transition duration-300  hover:border-periwinkle">Start a Fundraiser</button>
+      <button className="btn  rounded-full bg-base-200 text-white font-light  md:w-1/3 border-2 border-white py-5 hover:border-transition duration-300  hover:border-periwinkle"  onClick={() => router.push("/auth/log-in")}>Start a Fundraiser</button>
     </div>
   </div>
 </div>
