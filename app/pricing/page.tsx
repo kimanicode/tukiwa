@@ -23,11 +23,12 @@ const Pricing = () => {
   
 
   // Handle input change
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let rawValue = e.target.value.replace(/,/g, ""); // Remove commas
     rawValue = rawValue.replace(/\D/g, ""); // Remove non-numeric characters
     setAmount(rawValue ? parseInt(rawValue, 10) : 0);
   };
+  
 
   return (
     <div className='w-full  bg-gradient-to-b from-white to-[#f3f4f6]  md:p-20  p-10'>
