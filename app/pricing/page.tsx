@@ -18,8 +18,9 @@ const Pricing = () => {
       style: "currency",
       currency: "KES",
       minimumFractionDigits: 0,
-    }).format((Number(value))
+    }).format(Number(value)); // Corrected closing parenthesis
   };
+  
 
   // Handle input change
   const handleChange = (e) => {
