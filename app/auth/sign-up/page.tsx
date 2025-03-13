@@ -30,8 +30,15 @@ const Signup = () => {
             <input type="password" placeholder="••••••••" className="input input-bordered w-full" required />
           </div>
 
+          <div className="form-control flex flex-col py-2">
+            <label className="label">
+              <span className="label-text text-gray-700">Confirm Password</span>
+            </label>
+            <input type="password" className="input input-bordered w-full" required />
+          </div>
+
           <div className="form-control mt-4 flex justify-center">
-            <button className="btn bg-gradient-to-r from-new-red to-periwinkle border-none hover:bg-baee-100/50 text-white w-full rounded-full md:w-2/3">
+            <button className="btn bg-gradient-to-r from-new-red to-periwinkle border-none hover:bg-baee-100/50 text-white w-full rounded-full md:w-2/3 p-6">
               Sign Up
             </button>
           </div>

@@ -15,7 +15,7 @@ const Home = () => {
             <p className="py-6 text-base-100 md:text-xl text-center">
             Elevate your fundraising experience with our seamless, WhatsApp-integrated platform <br /> Effortlessly collect, track, and manage contributions for medical bills, community projects, and more.</p>
             <button
-              className="btn rounded-full bg-base-200 text-white font-light w-[80%] md:w-1/3 border-2 border-white py-5 hover:border-transition duration-300 hover:border-periwinkle"
+              className="btn rounded-full bg-base-200 text-white font-light w-[80%] md:w-1/3 border-2 border-white py-5 hover:border-transition duration-300 hover:border-periwinkle p-6"
               onClick={() => router.push("/auth/log-in")}
             >
               Start a Fundraiser

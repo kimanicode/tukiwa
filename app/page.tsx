@@ -9,7 +9,7 @@ import Action from "./components/Action";
 
 export default function Page() {
   return (
-    <div className=" ">
+    <div className="overflow-x-hidden">
   
       <Home />  
       <Steps/>    

@@ -23,17 +23,17 @@ const Login = () => {
           </div>
 
           <div className="flex justify-between w-full text-sm text-new-red text-center px-2 mt-1">
-            <a href="#" className="hover:underline">Forgot password?</a>
+            <a href="#" className="hover:underline p">Forgot password?</a>
           </div>
 
           <div className="form-control mt-7 flex justify-center">
-            <button className="btn bg-gradient-to-r from-new-red to-periwinkle border-none hover:bg-baee-100/50 text-white w-full rounded-full md:w-2/3">
+            <button className="btn bg-gradient-to-r from-new-red to-periwinkle border-none hover:bg-baee-100/50 text-white w-full rounded-full md:w-2/3 px-6 py-6">
               Login
             </button>
           </div>
         </form>
 
-        <p className="text-sm text-center text-gray-500 4">
+        <p className="text-sm text-center text-gray-500 py-4">
           Don't have an account? <a className="text-blue-600 hover:underline" href="/auth/sign-up">Sign Up</a>
         </p>
       </div>
