@@ -76,7 +76,7 @@ const Why = () => {
           {why.map((reason, index) => (
             <motion.div
               key={reason.id}
-              className="card hover:bg-base-100 hover:text-white text-base-100 bg-slate-100 hover:text-primary-content md:basis-[30%] basis-full shadow-2xl"
+              className="card hover:bg-black hover:text-white text-black bg-slate-100 hover:text-primary-content md:basis-[30%] basis-full shadow-2xl"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.2 }}

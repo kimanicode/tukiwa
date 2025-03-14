@@ -35,7 +35,7 @@ const Testimonials = () => {
             testimonials.map( (testimonial)=>{
                 
                 return(
-                    <div className=" bg-base-300 rounded-xl hover:bg-base-100 text-primary-content md:basis-[30%] basis-full shadow-2xl"  key={testimonial.id}>
+                    <div className=" bg-black rounded-xl hover:bg-black/50 text-primary-content md:basis-[30%] basis-full shadow-2xl"  key={testimonial.id}>
                 <div className="card-body">
                     <h2 className="text-white">
                         <Quote />

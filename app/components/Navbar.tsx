@@ -1,8 +1,10 @@
 "use client"
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import { useState } from "react";
 
 const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(true);
   const router= useRouter();
   return (
     <div className=''>
@@ -12,10 +14,10 @@ const Navbar = () => {
       <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
       </div>
-      <ul
+      { isOpen && <ul
         tabIndex={0}
         className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow text-white">
-        <li><Link href='/how'>How It Works</Link></li>
+        <li onClick={() => setIsOpen(!isOpen)}><Link href='/how'>How It Works</Link></li>
         <li>
           <a className=''>Fundraisers</a>
           <ul className="p-2">
@@ -24,12 +26,14 @@ const Navbar = () => {
           </ul>
         </li>
         <li><Link href='/pricing'>Pricing</Link></li>
-      </ul>
+      </ul>}
     </div>
+
+    
     <Link href= '/' className="bg-gradient-to-r from-new-red to-periwinkle inline-block text-transparent bg-clip-text  font-bold text-2xl">Tukiwa</Link>
   </div>
-  <div className="navbar-center hidden lg:flex">
-    <ul className="menu menu-horizontal px-1">
+  <div className="navbar-center hidden lg:flex text-black">
+    <ul className="menu menu-horizontal px-1 ">
       <li><Link href='/how' className='hover:text-new-red'>How It Works</Link></li>
       <li>
         <details>
@@ -44,7 +48,7 @@ const Navbar = () => {
     </ul>
   </div>
   <div className="navbar-end md:flex hidden">
-    <button className="btn"  onClick={() => router.push("/auth/sign-up")}>Sign In </button>
+    <button className="btn bg-black"  onClick={() => router.push("/auth/sign-up")}>Sign In </button>
   </div>
 </div>
     </div>

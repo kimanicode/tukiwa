@@ -27,7 +27,7 @@ const Login = () => {
           </div>
 
           <div className="form-control mt-7 flex justify-center">
-            <button className="btn bg-gradient-to-r from-new-red to-periwinkle border-none hover:bg-baee-100/50 text-white w-full rounded-full md:w-2/3 px-6 py-6">
+            <button className="btn bg-gradient-to-r from-new-red to-periwinkle border-none hover:bg-black/50 text-white w-full rounded-full md:w-2/3 px-6 py-6">
               Login
             </button>
           </div>

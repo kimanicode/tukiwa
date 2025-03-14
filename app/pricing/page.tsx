@@ -40,7 +40,7 @@ const Pricing = () => {
       </div>
 
       <div>
-        <div className="card w-full bg-base-100 shadow-sm">
+        <div className="card w-full bg-black shadow-sm">
           <div className="card-body">
             <span className="badge badge-xs badge-warning p-2">Default</span>
             <div className="flex justify-between flex-col md:flex-row">
@@ -73,7 +73,7 @@ const Pricing = () => {
           Let's Talk Numbers
         </p>
 
-        <div className='flex justify-center text-base-100 py-10 gap-10 basis-full flex-col md:flex-row'>
+        <div className='flex justify-center text-black py-10 gap-10 basis-full flex-col md:flex-row'>
 
           <div className='basis-1/2'>
             <div className="stats shadow w-full">
@@ -85,7 +85,7 @@ const Pricing = () => {
                     value={`KSH ${formatWithCommas(amount)}`}
                     onChange={handleChange}
                     placeholder="Enter Amount Here" 
-                    className="input text-white bg-base-100" 
+                    className="input text-white bg-black " 
                   />
                 </div>
               </div>
