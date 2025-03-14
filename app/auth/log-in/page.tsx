@@ -33,7 +33,7 @@ const Login = () => {
           </div>
         </form>
 
-        <p className="text-sm text-center text-gray-500 py-4">
+        <p className="text-sm text-center text-white py-4">
           Don't have an account? <a className="text-blue-600 hover:underline" href="/auth/sign-up">Sign Up</a>
         </p>
       </div>
