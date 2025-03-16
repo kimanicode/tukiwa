@@ -17,7 +17,7 @@ const Home = () => {
               Effortlessly collect, track, and manage contributions for medical bills, community projects, and more.
             </p>
             <button
-              className="btn rounded-full bg-black text-white font-light w-[80%] md:w-1/3 border-2 border-white py-5 hover:border-transition duration-300 hover:border-periwinkle p-6"
+              className="btn rounded-full bg-black text-white font-light w-[80%] md:w-1/3 border-2 border-white py-6 hover:border-transition duration-300 hover:border-periwinkle p-6"
               onClick={() => router.push("/auth/log-in")}
             >
               Start a Fundraiser

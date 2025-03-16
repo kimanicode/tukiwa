@@ -21,9 +21,13 @@ const Navbar = () => {
         <li>
           <a className=''>Fundraisers</a>
           <ul className="p-2">
-            <li><a>Submenu 1</a></li>
-            <li><a>Submenu 2</a></li>
-          </ul>
+                      <li>
+                        <Link href="/fundraisers/medical">Medical</Link>
+                      </li>
+                      <li>
+                        <Link href="/fundraisers/community">Community</Link>
+                      </li>
+                    </ul>
         </li>
         <li><Link href='/pricing'>Pricing</Link></li>
       </ul>}
@@ -38,10 +42,14 @@ const Navbar = () => {
       <li>
         <details>
           <summary className='hover:text-new-red'>Fundraisers</summary>
-          <ul className="p-2 text-white">
-            <li><a>Submenu 1</a></li>
-            <li><a>Submenu 2</a></li>
-          </ul>
+          <ul className="absolute left-0 mt-2 w-48 bg-white shadow-lg rounded-lg p-2 text-black z-10">
+                  <li className="p-2 hover:bg-gray-100 rounded">
+                    <Link href="/fundraisers/medical">Medical</Link>
+                  </li>
+                  <li className="p-2 hover:bg-gray-100 rounded">
+                    <Link href="/fundraisers/community">Community</Link>
+                  </li>
+                </ul>
         </details>
       </li>
       <li><Link  href='/pricing' className='hover:text-new-red'>Pricing</Link></li>
