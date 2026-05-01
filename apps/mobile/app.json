@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Tukiwa",
+    "slug": "tukiwa",
+    "scheme": "tukiwa",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "backgroundColor": "#047857",
+      "resizeMode": "contain"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#047857"
+      }
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ]
+  }
+}
