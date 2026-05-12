@@ -1,4 +1,4 @@
-import { FeeTransactionType, LoanStatus, MemberRole } from "@prisma/client";
+import { FeeStatus, FeeTransactionType, LoanStatus, MemberRole, ProposalType } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import Decimal from "decimal.js";
 import type {
@@ -13,15 +13,18 @@ import {
   stkPush as defaultStkPush,
   validateCallback
 } from "../../lib/mpesa";
+import { isValidAccountRef } from "../../lib/mpesa/account-ref";
 import { checkLoanEligibility } from "./eligibility.service";
 import { generateRepaymentSchedule } from "./schedule";
 import { Channel, NotificationEvent, NotificationService } from "../notifications";
 import { calculateFee, createFeeRecord, settleFee, voidFee } from "../fees/fee.service";
+import { createProposal, shouldRequireProposal } from "../treasury/proposal.service";
 
 type PrismaLike = Pick<
   PrismaClient,
   | "loan"
   | "loanRepayment"
+  | "chama"
   | "chamaMember"
   | "chamaSettings"
   | "auditLog"
@@ -150,13 +153,45 @@ export class LoanService {
     });
   }
 
-  async disburse(chamaId: string, actorId: string, loanId: string) {
+  async disburse(chamaId: string, actorId: string, loanId: string): Promise<any> {
     const loan = await this.prisma.loan.findFirst({
       where: { id: loanId, chamaId },
       include: { borrower: true }
     });
     if (!loan) throw new LoanError("Loan not found", 404);
     if (loan.status !== LoanStatus.APPROVED) throw new LoanError("Loan is not approved", 400);
+
+    if (await shouldRequireProposal(chamaId, loan.amount)) {
+      const proposal = await createProposal(defaultPrisma, {
+        chamaId,
+        proposedBy: actorId,
+        type: ProposalType.LOAN_DISBURSEMENT,
+        referenceId: loan.id,
+        referenceType: "loan_disbursement",
+        amount: loan.amount,
+        recipientPhone: loan.borrower.phone,
+        recipientName: loan.borrower.fullName,
+        description: `Loan disbursement to ${loan.borrower.fullName}`
+      });
+
+      await this.prisma.loan.update({
+        where: { id: loanId },
+        data: { status: LoanStatus.PENDING_APPROVAL }
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          chamaId,
+          actorId,
+          action: "LOAN_DISBURSEMENT_PROPOSAL_CREATED",
+          entity: "Loan",
+          entityId: loanId,
+          meta: { proposalId: proposal.id }
+        }
+      });
+
+      return { requiresApproval: true, proposal };
+    }
 
     const fee = calculateFee(FeeTransactionType.LOAN_DISBURSEMENT, loan.amount);
 
@@ -230,7 +265,13 @@ export class LoanService {
     if (loan.borrowerId !== userId) throw new LoanError("Forbidden", 403);
 
     const fee = calculateFee(FeeTransactionType.LOAN_REPAYMENT, input.amount);
-    const chargeAmount = input.amount + fee.feeAmount;
+    const chama = await this.prisma.chama.findUnique({
+      where: { id: chamaId },
+      select: { name: true, mpesaAccountRef: true }
+    });
+    if (!chama?.mpesaAccountRef || !isValidAccountRef(chama.mpesaAccountRef)) {
+      throw new LoanError("Chama has no valid M-Pesa account reference", 400);
+    }
 
     const repayment = await this.prisma.$transaction(async (tx) => {
       const created = await tx.loanRepayment.create({
@@ -245,16 +286,17 @@ export class LoanService {
         netAmount: fee.netAmount,
         feeRate: fee.feeRate,
         chamaId,
-        memberId: userId
+        memberId: userId,
+        status: FeeStatus.SPLIT
       });
       return created;
     });
     try {
       const { checkoutRequestId } = await (this.deps.stkPush ?? defaultStkPush)(
         phone,
-        centsToKes(chargeAmount),
-        repayment.id,
-        "Tukiwa loan repayment"
+        centsToKes(input.amount),
+        chama.mpesaAccountRef,
+        `${chama.name} loan repayment`
       );
 
       return this.prisma.loanRepayment.update({

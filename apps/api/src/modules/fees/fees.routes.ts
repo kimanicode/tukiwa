@@ -49,9 +49,15 @@ const feeRoutes: FastifyPluginAsync<FeeRoutesOptions> = async (fastify, options)
     return reply.send({
       ...fee,
       chargeAmount:
-        fee.deductionModel === "on_top"
-          ? query.amount + fee.feeAmount
-          : fee.netAmount
+        fee.deductionModel === "split_payments"
+          ? query.amount
+          : fee.deductionModel === "on_top"
+            ? query.amount + fee.feeAmount
+            : fee.netAmount,
+      note:
+        query.type === FeeTransactionType.CONTRIBUTION
+          ? "Fee collected via M-Pesa Split Payments"
+          : undefined
     });
   });
 

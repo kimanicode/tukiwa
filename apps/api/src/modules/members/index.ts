@@ -50,6 +50,11 @@ const memberRoutes: FastifyPluginAsync<MemberRoutesOptions> = async (fastify, op
     return reply.send(chamas);
   });
 
+  fastify.get("/me/home-summary", async (request, reply) => {
+    const summary = await service.getHomeSummary(request.user.id);
+    return reply.send(summary);
+  });
+
   fastify.get("/me/contributions", async (request, reply) => {
     const pagination = parsePagination(request.query);
     const contributions = await service.getMyContributions(request.user.id, pagination);

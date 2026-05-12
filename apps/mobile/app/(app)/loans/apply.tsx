@@ -7,9 +7,9 @@ import { AppHeader, BottomNav, colors, GreenPanel, PrimaryButton, ProgressBar, S
 import { cents, endpoints } from "../../../lib/api";
 
 export default function ApplyLoanScreen() {
-  const { chamaId = "", eligibleMax = "20000000" } = useLocalSearchParams<{ chamaId: string; eligibleMax: string }>();
+  const { chamaId = "", eligibleMax = "0" } = useLocalSearchParams<{ chamaId: string; eligibleMax: string }>();
   const max = Number(eligibleMax);
-  const [amount] = useState(Math.min(3000000, max));
+  const [amount] = useState(max);
   const [purpose, setPurpose] = useState("");
   const repayment = useMemo(() => Math.round(amount * 1.04), [amount]);
   const mutation = useMutation({
@@ -18,27 +18,27 @@ export default function ApplyLoanScreen() {
 
   return (
     <Screen>
-      <AppHeader title="Request loan" subtitle="Hustlers Table Banking" back />
+      <AppHeader title="Request loan" back />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <GreenPanel>
           <Text style={styles.panelLabel}>LOAN AMOUNT</Text>
           <Text style={styles.amount}>{cents(amount).replace("KES", "Ksh")}</Text>
-          <ProgressBar progress={amount / max} tone="green" />
+          <ProgressBar progress={max > 0 ? amount / max : 0} tone="green" />
           <View style={ui.rowBetween}>
-            <Text style={styles.range}>KES 5K</Text>
-            <Text style={styles.range}>KES 200K</Text>
+            <Text style={styles.range}>KES 0</Text>
+            <Text style={styles.range}>{cents(max).replace("KES", "Ksh")}</Text>
           </View>
         </GreenPanel>
 
         <View style={ui.rowBetween}>
           <Text style={styles.label}>Repayment period</Text>
-          <Text style={styles.value}>6 months</Text>
+          <Text style={styles.value}>Not selected</Text>
         </View>
-        <ProgressBar progress={0.64} tone="green" />
+        <ProgressBar progress={0} tone="green" />
 
         <SoftCard style={styles.summary}>
-          <SummaryRow label="Interest rate" value="8% p.a." />
-          <SummaryRow label="Monthly repayment" value="Ksh 5,200" green />
+          <SummaryRow label="Interest rate" value="Not set" />
+          <SummaryRow label="Monthly repayment" value="Ksh 0.00" green />
           <SummaryRow label="Total payable" value={cents(repayment).replace("KES", "Ksh")} />
         </SoftCard>
 
@@ -51,9 +51,6 @@ export default function ApplyLoanScreen() {
           onChangeText={setPurpose}
           multiline
         />
-
-        <Text style={styles.label}>Guarantor (member)</Text>
-        <View style={styles.select}><Text style={styles.selectText}>Faith Achieng</Text></View>
 
         <PrimaryButton tone="green" onPress={() => mutation.mutate()}>Submit request</PrimaryButton>
       </ScrollView>

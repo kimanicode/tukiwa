@@ -1,12 +1,16 @@
 import { Queue } from "bullmq";
 import Redis from "ioredis";
-import type { MpesaCallback } from "../lib/mpesa";
+import type { C2BCallbackPayload, MpesaCallback } from "../lib/mpesa";
 
 export const mpesaCallbackQueueName = "mpesa-callbacks";
 
-export type MpesaCallbackJobData = {
-  callback: MpesaCallback;
-};
+export type MpesaCallbackJobData =
+  | {
+      callback: MpesaCallback;
+    }
+  | {
+      c2bCallback: C2BCallbackPayload;
+    };
 
 let bullConnection: Redis | undefined;
 let mpesaCallbackQueue: Queue<MpesaCallbackJobData> | undefined;

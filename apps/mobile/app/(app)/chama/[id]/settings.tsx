@@ -1,34 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import { AppHeader, Badge, colors, PrimaryButton, RowItem, Screen, SoftCard, ui } from "../../../../components/ui";
 import { PhoneInviteInput } from "../../../../components/create-chama/PhoneInviteInput";
-import { cents, endpoints, type Chama } from "../../../../lib/api";
+import { cents, endpoints } from "../../../../lib/api";
 import { chamaInviteLink, chamaInviteMessage } from "../../../../lib/invite";
 import { useAuthStore } from "../../../../stores/auth.store";
 import { useChamaStore } from "../../../../stores/chama.store";
-
-const fallbackChama: Chama = {
-  id: "demo",
-  name: "Umoja Sisters Chama",
-  type: "MERRY_GO_ROUND",
-  description: "Rotational savings group",
-  poolBalance: 48000000,
-  settings: {
-    contributionAmount: 500000,
-    contributionCycle: "MONTHLY",
-    loanInterestRate: 8,
-    maxLoanMultiplier: 3,
-    penaltyRate: 5,
-    requiresMeetingForLoan: true
-  },
-  members: [
-    { id: "m1", role: "ADMIN", shares: 2, user: { id: "u1", fullName: "Amina Wanjiru", phone: "254712345678" } },
-    { id: "m2", role: "TREASURER", shares: 1, user: { id: "u2", fullName: "Faith Achieng", phone: "254722111222" } },
-    { id: "m3", role: "MEMBER", shares: 1, user: { id: "u3", fullName: "Mercy Njeri", phone: "254733222333" } }
-  ]
-};
 
 export default function ChamaSettingsScreen() {
   const { id = "" } = useLocalSearchParams<{ id: string }>();
@@ -37,7 +16,7 @@ export default function ChamaSettingsScreen() {
   const queryClient = useQueryClient();
   const [phones, setPhones] = useState<string[]>([]);
   const [inviteWarning, setInviteWarning] = useState("");
-  const [draft, setDraft] = useState({ name: "", description: "", maxMembers: "30" });
+  const [draft, setDraft] = useState({ name: "", description: "", maxMembers: "" });
 
   const chamaQuery = useQuery({
     queryKey: ["chama", id],
@@ -54,24 +33,22 @@ export default function ChamaSettingsScreen() {
     retry: false
   });
 
-  const chama = chamaQuery.data ?? fallbackChama;
-  const inviteLink = chamaInviteLink(chama.id);
-  const isAdmin = useMemo(
-    () => chama.members?.some((member) => member.role === "ADMIN" && member.user.id === user?.id) ?? (!chamaQuery.data && id === "demo"),
-    [chama.members, chamaQuery.data, id, user?.id]
-  );
-  const pendingMembers = [
-    { id: "pending-1", name: "Brian Otieno", phone: "0712345000" },
-    { id: "pending-2", name: "Njeri Wambui", phone: "0700111222" }
-  ];
+  const chama = chamaQuery.data;
+
+  const inviteLink = chama ? chamaInviteLink(chama.id) : "";
+  const isAdmin = chama?.members?.some((member) => member.role === "ADMIN" && member.user.id === user?.id) ?? false;
+  const pendingMembers: Array<{ id: string; name: string; phone: string }> = [];
 
   const updateMutation = useMutation({
-    mutationFn: () =>
-      endpoints.updateChama(chama.id, {
+    mutationFn: () => {
+      if (!chama) throw new Error("Chama data is not available");
+      return endpoints.updateChama(chama.id, {
         name: draft.name.trim(),
         description: draft.description.trim() || null
-      }),
+      });
+    },
     onSuccess: async (updated) => {
+      if (!chama) return;
       setActiveChama({ ...chama, ...updated });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["chama", chama.id] }),
@@ -83,6 +60,7 @@ export default function ChamaSettingsScreen() {
   });
 
   async function sendInvites() {
+    if (!chama) return;
     setInviteWarning("");
     let failed = false;
     for (const phone of phones) {
@@ -97,14 +75,50 @@ export default function ChamaSettingsScreen() {
     await queryClient.invalidateQueries({ queryKey: ["chama", chama.id] });
   }
 
+  if (!chama) {
+    return (
+      <Screen>
+        <AppHeader title="Chama settings" subtitle="No chama data available" back />
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>No chama data</Text>
+            <Text style={styles.emptyText}>Settings could not be loaded for this chama.</Text>
+          </View>
+        </ScrollView>
+      </Screen>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <Screen>
         <AppHeader title="Chama settings" back />
-        <View style={styles.emptyWrap}>
-          <Text style={styles.emptyTitle}>Admin access only</Text>
-          <Text style={styles.emptyText}>Only chama admins can edit settings or approve members.</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>Read-only settings</Text>
+            <Text style={styles.emptyText}>Only chama admins can edit settings or approve members.</Text>
+          </View>
+          <SoftCard style={styles.section}>
+            <Pressable
+              style={styles.navRow}
+              onPress={() =>
+                router.push({
+                  pathname: "/(app)/chama/settings/governance",
+                  params: { chamaId: chama.id }
+                } as never)
+              }
+            >
+              <View style={styles.navIcon}>
+                <Text style={styles.navIconText}>⚙</Text>
+              </View>
+              <View style={styles.navBody}>
+                <Text style={styles.sectionTitle}>Governance & Rules</Text>
+                <Text style={styles.helperText}>View voting, policies, records, and meeting cadence.</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </SoftCard>
+        </ScrollView>
       </Screen>
     );
   }
@@ -135,7 +149,7 @@ export default function ChamaSettingsScreen() {
 
         <SoftCard style={styles.section}>
           <Text style={styles.sectionTitle}>Pending approvals</Text>
-          {pendingMembers.map((member) => (
+          {pendingMembers.length ? pendingMembers.map((member) => (
             <View key={member.id} style={styles.approvalRow}>
               <View>
                 <Text style={styles.memberName}>{member.name}</Text>
@@ -146,7 +160,7 @@ export default function ChamaSettingsScreen() {
                 <SmallButton label="Reject" />
               </View>
             </View>
-          ))}
+          )) : <Text style={styles.helperText}>No pending approvals.</Text>}
         </SoftCard>
 
         <SoftCard style={styles.section}>
@@ -175,6 +189,27 @@ export default function ChamaSettingsScreen() {
           <SettingRow label="Loan interest" value={`${chama.settings?.loanInterestRate ?? 0}% p.a.`} />
           <SettingRow label="Max loan multiplier" value={`${chama.settings?.maxLoanMultiplier ?? 3}x`} />
           <Text style={styles.helperText}>Backend settings update endpoints are not available yet, so financial limits are shown here for admin review.</Text>
+        </SoftCard>
+
+        <SoftCard style={styles.section}>
+          <Pressable
+            style={styles.navRow}
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/chama/settings/governance",
+                params: { chamaId: chama.id }
+              } as never)
+            }
+          >
+            <View style={styles.navIcon}>
+              <Text style={styles.navIconText}>⚙</Text>
+            </View>
+            <View style={styles.navBody}>
+              <Text style={styles.sectionTitle}>Governance & Rules</Text>
+              <Text style={styles.helperText}>Voting, policies, records, and meeting cadence.</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
         </SoftCard>
 
         <SoftCard style={styles.section}>
@@ -238,15 +273,15 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: "sans-serif", color: colors.text, fontSize: 16, fontWeight: "900" },
   link: { fontFamily: "sans-serif", color: colors.green, fontSize: 13, fontWeight: "900" },
   shareRow: { flexDirection: "row", gap: 8 },
-  shareButton: { alignItems: "center", backgroundColor: colors.greenLight, borderRadius: 999, flex: 1, paddingVertical: 10 },
-  shareText: { fontFamily: "sans-serif", color: colors.green, fontSize: 12, fontWeight: "900" },
+  shareButton: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 999, flex: 1, paddingVertical: 10 },
+  shareText: { fontFamily: "sans-serif", color: colors.white, fontSize: 12, fontWeight: "900" },
   disabledButton: { opacity: 0.55 },
   statusText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12, fontWeight: "800", textAlign: "center" },
   approvalRow: { alignItems: "center", borderBottomColor: colors.line, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },
   memberName: { fontFamily: "sans-serif", color: colors.text, fontSize: 14, fontWeight: "900" },
   memberPhone: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12, marginTop: 2 },
   approvalActions: { flexDirection: "row", gap: 7 },
-  smallButtonGreen: { backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
+  smallButtonGreen: { backgroundColor: colors.navy, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
   smallButton: { backgroundColor: "#F1EEE4", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
   smallButtonTextGreen: { fontFamily: "sans-serif", color: colors.white, fontSize: 11, fontWeight: "900" },
   smallButtonText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 11, fontWeight: "900" },
@@ -268,6 +303,11 @@ const styles = StyleSheet.create({
   settingLabel: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12 },
   settingValue: { fontFamily: "sans-serif", color: colors.text, fontSize: 12, fontWeight: "900" },
   helperText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 11, lineHeight: 16 },
+  navRow: { alignItems: "center", flexDirection: "row", gap: 12 },
+  navIcon: { alignItems: "center", backgroundColor: colors.greenLight, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
+  navIconText: { fontFamily: "sans-serif", color: colors.green, fontSize: 16, fontWeight: "900" },
+  navBody: { flex: 1, gap: 3 },
+  chevron: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 28, fontWeight: "600" },
   emptyWrap: { alignItems: "center", padding: 24 },
   emptyTitle: { fontFamily: "sans-serif", color: colors.text, fontSize: 18, fontWeight: "900" },
   emptyText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 13, lineHeight: 19, marginTop: 6, textAlign: "center" }

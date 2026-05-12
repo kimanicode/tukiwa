@@ -1,9 +1,10 @@
-import { ContributionStatus, Cycle, FeeTransactionType, RotationStatus } from "@prisma/client";
+import { ContributionStatus, Cycle, FeeTransactionType, ProposalType, RotationStatus } from "@prisma/client";
 import { prisma as defaultPrisma } from "../../../lib/prisma";
 import { b2cTransfer as defaultB2cTransfer } from "../../../lib/mpesa";
 import { sendSms as defaultSendSms } from "../../../lib/sms";
 import { Channel, NotificationEvent, NotificationService } from "../../notifications";
 import { calculateFee, createFeeRecord, voidFee } from "../../fees/fee.service";
+import { createProposal, shouldRequireProposal } from "../../treasury/proposal.service";
 
 export class MerryGoRoundError extends Error {
   constructor(message: string, public readonly statusCode: number) {
@@ -78,6 +79,33 @@ export class MerryGoRoundService {
       }
     });
     if (unpaid > 0) throw new MerryGoRoundError("All contributions must be paid before payout", 400);
+
+    if (await shouldRequireProposal(chamaId, rotation.amount)) {
+      const proposal = await createProposal(defaultPrisma, {
+        chamaId,
+        proposedBy: actorId,
+        type: ProposalType.ROTATION_PAYOUT,
+        referenceId: rotation.id,
+        referenceType: "rotation_payout",
+        amount: rotation.amount,
+        recipientPhone: rotation.member.user.phone,
+        recipientName: rotation.member.user.fullName,
+        description: `Rotation payout - cycle ${rotation.position} to ${rotation.member.user.fullName}`
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          chamaId,
+          actorId,
+          action: "ROTATION_PAYOUT_PROPOSAL_CREATED",
+          entity: "Rotation",
+          entityId: rotation.id,
+          meta: { proposalId: proposal.id }
+        }
+      });
+
+      return { requiresApproval: true, proposal };
+    }
 
     const fee = calculateFee(FeeTransactionType.ROTATION_PAYOUT, rotation.amount);
 

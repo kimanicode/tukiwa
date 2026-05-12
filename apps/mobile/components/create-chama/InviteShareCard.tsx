@@ -34,8 +34,8 @@ const styles = StyleSheet.create({
   label: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12 },
   link: { fontFamily: "sans-serif", color: colors.text, fontSize: 14, fontWeight: "900", marginTop: 3 },
   actions: { flexDirection: "row", gap: 8 },
-  shareButton: { alignItems: "center", backgroundColor: colors.greenLight, borderRadius: 999, flex: 1, paddingVertical: 9 },
-  shareText: { fontFamily: "sans-serif", color: colors.green, fontSize: 12, fontWeight: "900" },
+  shareButton: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 999, flex: 1, paddingVertical: 9 },
+  shareText: { fontFamily: "sans-serif", color: colors.white, fontSize: 12, fontWeight: "900" },
   qr: { alignItems: "center", backgroundColor: "#E8E3D6", borderRadius: 18, height: 104, justifyContent: "center" },
   qrText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 18, fontWeight: "900" }
 });

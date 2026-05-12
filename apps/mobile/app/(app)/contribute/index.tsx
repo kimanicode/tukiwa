@@ -4,12 +4,14 @@ import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppHeader, BottomNav, colors, GreenPanel, PrimaryButton, Screen, SoftCard } from "../../../components/ui";
 import { cents, endpoints } from "../../../lib/api";
+import { useAuthStore } from "../../../stores/auth.store";
 
 export default function ContributeScreen() {
   const { chamaId = "" } = useLocalSearchParams<{ chamaId: string }>();
+  const user = useAuthStore((state) => state.user);
   const chama = useQuery({ queryKey: ["chama", chamaId], queryFn: () => endpoints.getChama(chamaId), enabled: Boolean(chamaId) });
   const due = useMemo(() => ({
-    amount: chama.data?.settings?.contributionAmount || 500000,
+    amount: chama.data?.settings?.contributionAmount ?? 0,
     dueDate: new Date().toISOString()
   }), [chama.data?.settings?.contributionAmount]);
   const feePreview = useQuery({
@@ -48,7 +50,7 @@ export default function ContributeScreen() {
         <Text style={styles.label}>M-Pesa phone</Text>
         <View style={styles.phoneBox}>
           <Text style={styles.phoneIcon}>▯</Text>
-          <Text style={styles.phone}>+254 712 345 678</Text>
+          <Text style={styles.phone}>{user?.phone ? `+${user.phone}` : "No phone linked"}</Text>
         </View>
 
         <SoftCard style={styles.summary}>

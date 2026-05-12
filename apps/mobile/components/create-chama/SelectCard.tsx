@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     padding: 14
   },
   icon: { alignItems: "center", backgroundColor: "#F1EEE4", borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
-  iconActive: { alignItems: "center", backgroundColor: colors.green, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
+  iconActive: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   iconText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 17, fontWeight: "900" },
   iconTextActive: { fontFamily: "sans-serif", color: colors.white, fontSize: 17, fontWeight: "900" },
   body: { flex: 1 },

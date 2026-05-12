@@ -4,7 +4,8 @@ import { getBullConnection } from "./mpesa-callback.queue";
 export const notificationQueueNames = {
   contributionReminder: "contribution-reminder",
   overdueAlert: "overdue-alert",
-  repaymentReminder: "loan-repayment-reminder"
+  repaymentReminder: "loan-repayment-reminder",
+  proposalExpiry: "proposal-expiry"
 } as const;
 
 export function createNotificationQueue(name: string) {
@@ -26,5 +27,10 @@ export async function scheduleNotificationJobs(): Promise<void> {
     "daily",
     {},
     { repeat: { pattern: "0 8 * * *", tz: "Africa/Nairobi" }, jobId: "daily-loan-reminders" }
+  );
+  await createNotificationQueue(notificationQueueNames.proposalExpiry).add(
+    "hourly",
+    {},
+    { repeat: { pattern: "0 * * * *", tz: "Africa/Nairobi" }, jobId: "hourly-proposal-expiry" }
   );
 }

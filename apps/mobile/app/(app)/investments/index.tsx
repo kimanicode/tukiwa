@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { cents, endpoints } from "../../../lib/api";
-import { Card, CardTitle, colors, RowItem, Screen, TopBar, TopMetric, ui } from "../../../components/ui";
+import { AppHeader, BottomNav, Card, CardTitle, colors, RowItem, Screen, TopMetric, ui } from "../../../components/ui";
 
 export default function InvestmentsScreen() {
   const { chamaId = "" } = useLocalSearchParams<{ chamaId: string }>();
@@ -18,13 +18,14 @@ export default function InvestmentsScreen() {
 
   return (
     <Screen>
-      <TopBar backLabel="Chama" title="Investments" subtitle="Portfolio value and returns">
+      <AppHeader title="Investments" subtitle="Portfolio value and returns" />
+      <View style={styles.metrics}>
         <View style={ui.rowGap}>
           <TopMetric label="Total invested" value={cents(totalInvested)} />
           <TopMetric label="Current value" value={cents(currentValue)} accent />
         </View>
-      </TopBar>
-      <ScrollView contentContainerStyle={{ padding: 12, gap: 10 }}>
+      </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Card>
           <CardTitle>Portfolio breakdown</CardTitle>
           <View style={styles.breakdown}>
@@ -71,20 +72,23 @@ export default function InvestmentsScreen() {
           <CardTitle>My share value</CardTitle>
           <View style={ui.rowBetween}>
             <View>
-              <Text style={styles.shareValue}>{cents(Math.round(currentValue / 12))}</Text>
-              <Text style={styles.shareSub}>Estimated 1 of 12 equal shares</Text>
+              <Text style={styles.shareValue}>{cents(0)}</Text>
+              <Text style={styles.shareSub}>Share value unavailable</Text>
             </View>
             <Text style={gainLoss >= 0 ? styles.shareGain : styles.shareLoss}>
-              {gainLoss >= 0 ? "+" : ""}{cents(Math.round(gainLoss / 12))}
+              {gainLoss >= 0 ? "+" : ""}{cents(0)}
             </Text>
           </View>
         </Card>
       </ScrollView>
+      <BottomNav active="Invest" />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  content: { gap: 10, padding: 20, paddingBottom: 112 },
+  metrics: { paddingHorizontal: 20, paddingTop: 6 },
   breakdown: { alignItems: "center", flexDirection: "row", gap: 16 },
   donut: { alignItems: "center", borderColor: colors.navyLight, borderRadius: 40, borderWidth: 14, height: 80, justifyContent: "center", width: 80 },
   gainPct: { fontFamily: "sans-serif", color: colors.green, fontSize: 12, fontWeight: "800" },

@@ -12,7 +12,7 @@ export async function processContributionReminders(
   const notifications = deps.notifications ?? new NotificationService();
   const now = deps.now?.() ?? new Date();
   const due = new Date(now);
-  due.setDate(now.getDate() + 2);
+  due.setDate(now.getDate() + 1);
   const start = new Date(due);
   start.setHours(0, 0, 0, 0);
   const end = new Date(due);
@@ -20,14 +20,20 @@ export async function processContributionReminders(
 
   const contributions = await prisma.contribution.findMany({
     where: { status: ContributionStatus.PENDING, dueDate: { gte: start, lte: end } },
-    include: { member: { include: { user: true } } }
+    include: { chama: true, member: { include: { user: true } } }
   });
   await Promise.all(
     contributions.map((contribution: any) =>
       notifications.send(
         contribution.member.userId,
         NotificationEvent.CONTRIBUTION_REMINDER,
-        { chamaId: contribution.chamaId, contributionId: contribution.id, amount: contribution.amount },
+        {
+          chamaId: contribution.chamaId,
+          chamaName: contribution.chama?.name,
+          contributionId: contribution.id,
+          amount: contribution.amount,
+          dueDate: contribution.dueDate
+        },
         [Channel.PUSH, Channel.SMS]
       )
     )

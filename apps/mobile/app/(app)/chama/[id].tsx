@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   AppHeader,
@@ -15,31 +15,11 @@ import {
   SoftCard,
   ui
 } from "../../../components/ui";
-import { cents, endpoints, type Chama, type Contribution, type Loan } from "../../../lib/api";
+import { cents, endpoints } from "../../../lib/api";
 import { useAuthStore } from "../../../stores/auth.store";
 import { useChamaStore } from "../../../stores/chama.store";
 
-const tabs = ["Overview", "Contributions", "Loans", "Investments"] as const;
-
-const fallbackChama: Chama = {
-  id: "demo",
-  name: "Umoja Sisters Chama",
-  type: "MERRY_GO_ROUND",
-  poolBalance: 48000000,
-  settings: {
-    contributionAmount: 500000,
-    contributionCycle: "MONTHLY",
-    loanInterestRate: 8,
-    maxLoanMultiplier: 3,
-    penaltyRate: 5,
-    requiresMeetingForLoan: true
-  },
-  members: [
-    { id: "m1", role: "ADMIN", shares: 2, user: { id: "u1", fullName: "Amina Wanjiru", phone: "254712345678" } },
-    { id: "m2", role: "TREASURER", shares: 1, user: { id: "u2", fullName: "Faith Achieng", phone: "254722111222" } },
-    { id: "m3", role: "MEMBER", shares: 1, user: { id: "u3", fullName: "Mercy Njeri", phone: "254733222333" } }
-  ]
-};
+const tabs = ["Overview", "Contributions", "Loans", "Investments", "Treasury"] as const;
 
 export default function ChamaDetailScreen() {
   const { id = "" } = useLocalSearchParams<{ id: string }>();
@@ -68,18 +48,34 @@ export default function ChamaDetailScreen() {
     retry: false
   });
 
-  const chama = chamaQuery.data ?? fallbackChama;
-  const visibleTabs = useMemo(
-    () => (chama.type === "INVESTMENT" ? tabs : tabs.filter((item) => item !== "Investments")),
-    [chama.type]
-  );
-  const contributionList = contributions.data ?? demoContributions(chama);
-  const loanList = loans.data ?? demoLoans;
+  const chama = chamaQuery.data;
+
+  if (!chama) {
+    return (
+      <Screen>
+        <AppHeader title="Chama" subtitle="No chama data available" back />
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <SoftCard style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No chama data</Text>
+            <Text style={styles.emptyText}>This chama could not be loaded.</Text>
+          </SoftCard>
+        </ScrollView>
+        <BottomNav active="Chamas" />
+      </Screen>
+    );
+  }
+
+  const visibleTabs = tabs.filter((item) => {
+    if (item === "Investments") return chama.type === "INVESTMENT";
+    if (item === "Treasury") return Boolean(chama.settings?.treasuryEnabled);
+    return true;
+  });
+  const contributionList = contributions.data ?? [];
+  const loanList = loans.data ?? [];
   const paidContributions = contributionList.filter((item) => item.status === "PAID").length;
   const contributionProgress = contributionList.length ? paidContributions / contributionList.length : 0;
   const isAdmin =
-    chama.members?.some((member) => member.role === "ADMIN" && member.user.id === user?.id) ??
-    (!chamaQuery.data && id === "demo");
+    chama.members?.some((member) => member.role === "ADMIN" && member.user.id === user?.id) ?? false;
 
   return (
     <Screen>
@@ -124,6 +120,23 @@ export default function ChamaDetailScreen() {
 
         {tab === "Overview" ? (
           <>
+            {isAdmin && !chama.settings?.treasuryEnabled ? (
+              <SoftCard style={styles.treasuryBanner}>
+                <Text style={styles.bannerTitle}>Protect your chama's money</Text>
+                <Text style={styles.bannerText}>
+                  Enable Trustless Treasury so outbound transfers require multi-person approval.
+                </Text>
+                <View style={styles.bannerActions}>
+                  <Pressable
+                    style={styles.primaryAction}
+                    onPress={() => router.push(`/(app)/chama/treasury/signatories?chamaId=${chama.id}` as never)}
+                  >
+                    <Text style={styles.primaryActionText}>Enable protection</Text>
+                  </Pressable>
+                </View>
+              </SoftCard>
+            ) : null}
+
             <SoftCard>
               <View style={ui.rowBetween}>
                 <Text style={styles.sectionTitle}>Next contribution</Text>
@@ -131,7 +144,7 @@ export default function ChamaDetailScreen() {
               </View>
               <Text style={styles.amount}>{cents(chama.settings?.contributionAmount ?? 0).replace("KES", "Ksh")}</Text>
               <Text style={styles.muted}>{paidContributions} of {contributionList.length} members paid</Text>
-              <ProgressBar progress={contributionProgress || 0.65} />
+              <ProgressBar progress={contributionProgress} />
             </SoftCard>
 
             <View style={ui.rowBetween}>
@@ -162,7 +175,7 @@ export default function ChamaDetailScreen() {
 
         {tab === "Contributions" ? (
           <SoftCard style={styles.listCard}>
-            {contributionList.map((item, index) => (
+            {contributionList.length ? contributionList.map((item, index) => (
               <RowItem
                 key={item.id}
                 title={item.member?.user?.fullName ?? `Member ${index + 1}`}
@@ -170,13 +183,13 @@ export default function ChamaDetailScreen() {
                 avatarTone={index % 2 === 0 ? "green" : "teal"}
                 right={<Badge tone={item.status === "PAID" ? "green" : item.status === "PENDING" ? "amber" : "red"}>{titleCase(item.status)}</Badge>}
               />
-            ))}
+            )) : <Text style={styles.emptyText}>No contributions recorded.</Text>}
           </SoftCard>
         ) : null}
 
         {tab === "Loans" ? (
           <SoftCard style={styles.listCard}>
-            {loanList.map((loan, index) => (
+            {loanList.length ? loanList.map((loan, index) => (
               <RowItem
                 key={loan.id}
                 title={cents(loan.amount).replace("KES", "Ksh")}
@@ -184,7 +197,7 @@ export default function ChamaDetailScreen() {
                 avatarTone={index % 2 === 0 ? "amber" : "green"}
                 right={<Badge tone={loan.status === "REPAID" ? "green" : loan.status === "PENDING" ? "amber" : "teal"}>{titleCase(loan.status)}</Badge>}
               />
-            ))}
+            )) : <Text style={styles.emptyText}>No loans recorded.</Text>}
           </SoftCard>
         ) : null}
 
@@ -200,6 +213,32 @@ export default function ChamaDetailScreen() {
               />
             ))}
           </SoftCard>
+        ) : null}
+
+        {tab === "Treasury" ? (
+          <>
+            <SoftCard>
+              <View style={ui.rowBetween}>
+                <View>
+                  <Text style={styles.sectionTitle}>Trustless Treasury</Text>
+                  <Text style={styles.muted}>
+                    {chama.settings?.requiredApprovals ?? 2} approvals required above {cents(chama.settings?.proposalThresholdCents ?? 500000).replace("KES", "Ksh")}
+                  </Text>
+                </View>
+                <Badge tone="green">Protected</Badge>
+              </View>
+              <View style={styles.actions}>
+                <Pressable style={styles.primaryAction} onPress={() => router.push(`/(app)/chama/treasury?chamaId=${chama.id}` as never)}>
+                  <Text style={styles.primaryActionText}>Open treasury</Text>
+                </Pressable>
+                {isAdmin ? (
+                  <Pressable style={styles.secondaryAction} onPress={() => router.push(`/(app)/chama/treasury/signatories?chamaId=${chama.id}` as never)}>
+                    <Text style={styles.secondaryActionText}>Settings</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </SoftCard>
+          </>
         ) : null}
 
         <View style={styles.actions}>
@@ -235,23 +274,6 @@ function Setting({ label, value }: { label: string; value: string }) {
   );
 }
 
-function demoContributions(chama: Chama): Contribution[] {
-  return (chama.members ?? []).map((member, index) => ({
-    id: `demo-c-${member.id}`,
-    chamaId: chama.id,
-    memberId: member.id,
-    amount: chama.settings?.contributionAmount ?? 500000,
-    status: index === 2 ? "PENDING" : "PAID",
-    dueDate: "2026-05-04",
-    member: { user: member.user }
-  }));
-}
-
-const demoLoans: Loan[] = [
-  { id: "loan-1", amount: 5000000, totalDue: 5400000, outstandingBalance: 3250000, status: "DISBURSED" },
-  { id: "loan-2", amount: 2500000, totalDue: 2700000, outstandingBalance: 0, status: "REPAID" }
-];
-
 function initials(value: string) {
   return value.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 }
@@ -278,7 +300,7 @@ const styles = StyleSheet.create({
   heroStatValue: { fontFamily: "sans-serif", color: colors.white, fontSize: 13, fontWeight: "900", marginTop: 5 },
   tabBar: { backgroundColor: "#F1EEE4", borderRadius: 18, flexDirection: "row", padding: 4 },
   tab: { alignItems: "center", borderRadius: 15, flex: 1, paddingVertical: 9 },
-  tabActive: { alignItems: "center", backgroundColor: colors.green, borderRadius: 15, flex: 1, paddingVertical: 9 },
+  tabActive: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 15, flex: 1, paddingVertical: 9 },
   tabText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 11, fontWeight: "800" },
   tabTextActive: { fontFamily: "sans-serif", color: colors.white, fontSize: 11, fontWeight: "900" },
   sectionTitle: { fontFamily: "sans-serif", color: colors.text, fontSize: 16, fontWeight: "900" },
@@ -286,14 +308,21 @@ const styles = StyleSheet.create({
   muted: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12, marginTop: 4 },
   linkText: { fontFamily: "sans-serif", color: colors.green, fontSize: 12, fontWeight: "800" },
   listCard: { paddingVertical: 4 },
+  emptyCard: { gap: 6 },
+  emptyTitle: { fontFamily: "sans-serif", color: colors.text, fontSize: 16, fontWeight: "900", textAlign: "center" },
+  emptyText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12, lineHeight: 18, paddingVertical: 12, textAlign: "center" },
   settingsGrid: { flexDirection: "row", gap: 12, marginTop: 14 },
   setting: { backgroundColor: "#F1EEE4", borderRadius: 16, flex: 1, padding: 13 },
   settingValue: { fontFamily: "sans-serif", color: colors.text, fontSize: 13, fontWeight: "900", marginTop: 6 },
   gain: { fontFamily: "sans-serif", color: colors.green, fontSize: 12, fontWeight: "900" },
   loss: { fontFamily: "sans-serif", color: colors.red, fontSize: 12, fontWeight: "900" },
   actions: { flexDirection: "row", gap: 12, marginTop: 2 },
-  primaryAction: { alignItems: "center", backgroundColor: colors.green, borderRadius: 18, flex: 1, paddingVertical: 15 },
+  primaryAction: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 18, flex: 1, paddingVertical: 15 },
   primaryActionText: { fontFamily: "sans-serif", color: colors.white, fontSize: 13, fontWeight: "900" },
-  secondaryAction: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flex: 1, paddingVertical: 15 },
-  secondaryActionText: { fontFamily: "sans-serif", color: colors.green, fontSize: 13, fontWeight: "900" }
+  secondaryAction: { alignItems: "center", backgroundColor: colors.navy, borderColor: colors.navy, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flex: 1, paddingVertical: 15 },
+  secondaryActionText: { fontFamily: "sans-serif", color: colors.white, fontSize: 13, fontWeight: "900" },
+  treasuryBanner: { backgroundColor: colors.greenSoft },
+  bannerTitle: { fontFamily: "sans-serif", color: colors.text, fontSize: 15, fontWeight: "900" },
+  bannerText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 6 },
+  bannerActions: { flexDirection: "row", marginTop: 14 }
 });

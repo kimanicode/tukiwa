@@ -3,17 +3,27 @@ import * as SecureStore from "expo-secure-store";
 import type {
   ApplyLoanInput,
   DevLoginInput,
+  GovernanceSettingsInput,
   InitiateContributionInput,
   RequestOtpInput,
+  ResetPinInput,
+  SetPinInput,
+  SetupProfileInput,
   UpdateChamaInput,
   UpdateChamaSettingsInput,
-  VerifyOtpInput
+  VerifyOtpInput,
+  VerifyPinInput
 } from "@chama/shared";
 import {
   createChamaSchema,
+  governanceSettingsSchema,
   inviteMemberSchema,
+  resetPinSchema,
+  setPinSchema,
+  setupProfileSchema,
   updateChamaSettingsSchema,
-  updateChamaSchema
+  updateChamaSchema,
+  verifyPinSchema
 } from "@chama/shared";
 import { z } from "zod";
 import { useAuthStore } from "../stores/auth.store";
@@ -24,14 +34,33 @@ export type User = {
   id: string;
   phone: string;
   fullName: string;
+  nationalId?: string | null;
   pushToken?: string | null;
   kycVerified?: boolean;
+  isPhoneVerified?: boolean;
+  isProfileComplete?: boolean;
+  hasPinSet?: boolean;
+};
+
+export type AuthResponse = { accessToken: string; refreshToken: string; user: User };
+export type AuthStatusResponse = {
+  isPhoneVerified: boolean;
+  isProfileComplete: boolean;
+  hasPinSet: boolean;
+  user: User;
+};
+export type PhoneStatusResponse = {
+  isNewUser: boolean;
+  hasPinSet: boolean;
+  isPhoneVerified: boolean;
+  fullName: string | null;
 };
 
 export type Chama = {
   id: string;
   name: string;
   type: "MERRY_GO_ROUND" | "TABLE_BANKING" | "INVESTMENT";
+  mpesaAccountRef?: string;
   description?: string | null;
   logoUrl?: string | null;
   poolBalance?: number;
@@ -44,6 +73,16 @@ export type Chama = {
     maxLoanMultiplier: number;
     penaltyRate: number;
     requiresMeetingForLoan: boolean;
+    votingRule?: string;
+    withdrawalPolicy?: string;
+    memberExitPolicy?: string;
+    refundPolicy?: string;
+    disputeResolutionMethod?: string;
+    meetingFrequency?: string;
+    recordVisibility?: string;
+    treasuryEnabled?: boolean;
+    requiredApprovals?: number;
+    proposalThresholdCents?: number;
   } | null;
   members?: Array<{
     id: string;
@@ -61,6 +100,39 @@ export type MyChama = {
   chama: Chama;
   role: string;
   nextContributionDue: string | null;
+  memberCount?: number;
+  cycleProgress?: number;
+  cycleTarget?: number;
+  nextPayoutLabel?: string;
+};
+
+export type HomeSummary = {
+  poolBalance?: number;
+  walletBalance?: number;
+  chamaBalance: number;
+  totalBalance: number;
+  nextAction: {
+    type: "CONTRIBUTION";
+    chamaId: string;
+    chamaName: string;
+    amount: number;
+    dueDate: string;
+    title: string;
+  } | null;
+  chamas: MyChama[];
+  insights: {
+    monthlySaved: number;
+    activeLoan: number;
+    investmentReturnPct: number;
+  };
+  recentActivity: Array<{
+    id: string;
+    title: string;
+    source: string;
+    date: string;
+    amount: number;
+    direction: "income" | "expense";
+  }>;
 };
 
 export type Contribution = {
@@ -106,7 +178,118 @@ export type FeePreview = {
   netAmount: number;
   chargeAmount: number;
   feeRate: number;
-  deductionModel: "on_top" | "deducted";
+  deductionModel: "on_top" | "deducted" | "split_payments";
+  note?: string;
+};
+
+export type FundsSummary = {
+  chama: {
+    id: string;
+    name: string;
+    mpesaAccountRef: string;
+    paybillNumber: string;
+  };
+  pool: {
+    balance: number;
+    totalContributed: number;
+    totalDisbursed: number;
+    totalRepaid: number;
+    totalFeesPaid: number;
+  };
+  currentCycle: {
+    collected: number;
+    expected: number;
+    collectionRate: number;
+  };
+  recentTransactions: Array<{
+    id: string;
+    type: "CONTRIBUTION" | "LOAN_DISBURSEMENT" | "LOAN_REPAYMENT" | "ROTATION_PAYOUT" | "INVESTMENT_PURCHASE";
+    description: string;
+    amount: number;
+    memberName: string;
+    mpesaRef: string | null;
+    createdAt: string;
+  }>;
+  outstandingLoans: {
+    count: number;
+    totalOutstanding: number;
+  };
+  platformFees: {
+    totalThisMonth: number;
+    totalAllTime: number;
+    rateApplied: string;
+  };
+};
+
+export type ProposalStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "EXECUTING"
+  | "EXECUTED"
+  | "REJECTED"
+  | "EXPIRED"
+  | "CANCELLED"
+  | "FAILED";
+
+export type ProposalType =
+  | "LOAN_DISBURSEMENT"
+  | "ROTATION_PAYOUT"
+  | "INVESTMENT_PURCHASE"
+  | "MANUAL_TRANSFER";
+
+export type TxProposal = {
+  id: string;
+  chamaId: string;
+  proposedBy: string;
+  type: ProposalType;
+  status: ProposalStatus;
+  referenceId: string;
+  referenceType: string;
+  amount: number;
+  recipientPhone: string;
+  recipientName: string;
+  description: string;
+  requiredApprovals: number;
+  totalSignatories: number;
+  executedAt?: string | null;
+  expiredAt?: string | null;
+  mpesaRef?: string | null;
+  failureReason?: string | null;
+  createdAt: string;
+  expiresAt: string;
+  approvals?: Array<{
+    id: string;
+    signatoryId: string;
+    action: "APPROVED" | "REJECTED";
+    reason?: string | null;
+    signedAt: string;
+    signatory?: User;
+  }>;
+  proposer?: User;
+};
+
+export type ChamaSignatory = {
+  id: string;
+  chamaId: string;
+  userId: string;
+  addedBy: string;
+  isActive: boolean;
+  addedAt: string;
+  removedAt?: string | null;
+  user?: User;
+};
+
+export type TreasurySettings = {
+  treasuryEnabled: boolean;
+  requiredApprovals: number;
+  proposalThresholdCents: number;
+};
+
+export type TxAnomaly = {
+  proposalId: string;
+  type: string;
+  description: string;
+  severity: string;
 };
 
 export const api = axios.create({
@@ -144,26 +327,42 @@ api.interceptors.response.use(
 );
 
 export const endpoints = {
-  requestOtp: (input: RequestOtpInput) => api.post("/auth/request-otp", input),
+  requestOtp: async (input: RequestOtpInput | string) => {
+    const payload = typeof input === "string" ? { phone: input } : input;
+    await api.post("/auth/request-otp", payload);
+  },
   devLogin: async (input: DevLoginInput) => {
-    const { data } = await api.post<{ accessToken: string; refreshToken: string; user: User }>(
-      "/auth/dev-login",
-      input
-    );
+    const { data } = await api.post<AuthResponse>("/auth/dev-login", input);
     return data;
   },
-  verifyOtp: async (input: VerifyOtpInput) => {
-    const { data } = await api.post<{ accessToken: string; refreshToken: string; user: User }>(
-      "/auth/verify-otp",
-      input
-    );
+  verifyOtp: async (input: VerifyOtpInput | string, code?: string) => {
+    const payload = typeof input === "string" ? { phone: input, code: code ?? "" } : input;
+    const { data } = await api.post<AuthResponse>("/auth/verify-otp", payload);
     return data;
   },
+  setupProfile: async (input: SetupProfileInput) =>
+    (await api.post<User>("/auth/setup-profile", setupProfileSchema.parse(input))).data,
+  setPin: async (pin: string, confirmPin: string) => {
+    await api.post<{ success: true }>("/auth/set-pin", setPinSchema.parse({ pin, confirmPin } satisfies SetPinInput));
+  },
+  verifyPin: async (input: VerifyPinInput) =>
+    (await api.post<AuthResponse>("/auth/verify-pin", verifyPinSchema.parse(input))).data,
+  resetPin: async (pin: string, confirmPin: string) => {
+    await api.post<{ success: true }>("/auth/reset-pin", resetPinSchema.parse({ pin, confirmPin } satisfies ResetPinInput));
+  },
+  getAuthStatus: async () => (await api.get<AuthStatusResponse>("/auth/status")).data,
+  getPhoneStatus: async (phone: string) =>
+    (await api.get<PhoneStatusResponse>("/auth/phone-status", { params: { phone } })).data,
+  getBiometricChallenge: async (phone: string) =>
+    (await api.get<{ biometricToken: string }>("/auth/biometric-challenge", { params: { phone } })).data,
+  verifyBiometric: async (phone: string, biometricToken: string) =>
+    (await api.post<AuthResponse>("/auth/biometric-verify", { phone, biometricToken })).data,
   logout: (refreshToken: string) => api.post("/auth/logout", { refreshToken }),
   getMe: async () => (await api.get<User>("/me")).data,
   updatePushToken: async (pushToken: string) =>
     (await api.post<User>("/me/push-token", { pushToken })).data,
   getMyChamas: async () => (await api.get<MyChama[]>("/me/chamas")).data,
+  getHomeSummary: async () => (await api.get<HomeSummary>("/me/home-summary")).data,
   createChama: async (input: CreateChamaRequest): Promise<ChamaResponse> =>
     (await api.post<ChamaResponse>("/chamas", createChamaSchema.parse(input))).data,
   inviteMember: async (chamaId: string, phone: InviteMemberRequest["phone"]): Promise<void> => {
@@ -178,7 +377,16 @@ export const endpoints = {
         updateChamaSettingsSchema.parse(input)
       )
     ).data,
+  updateGovernanceSettings: async (chamaId: string, input: GovernanceSettingsInput) =>
+    (
+      await api.patch<NonNullable<Chama["settings"]>>(
+        `/chamas/${chamaId}/settings/governance`,
+        governanceSettingsSchema.parse(input)
+      )
+    ).data,
   getChama: async (id: string) => (await api.get<Chama>(`/chamas/${id}`)).data,
+  getFundsSummary: async (chamaId: string) =>
+    (await api.get<FundsSummary>(`/chamas/${chamaId}/funds/summary`)).data,
   getContributions: async (chamaId: string) =>
     (await api.get<Contribution[]>(`/chamas/${chamaId}/contributions`)).data,
   getLoans: async (chamaId: string) => (await api.get<Loan[]>(`/chamas/${chamaId}/loans`)).data,
@@ -191,7 +399,31 @@ export const endpoints = {
   applyLoan: async (chamaId: string, input: ApplyLoanInput) =>
     (await api.post<Loan>(`/chamas/${chamaId}/loans`, input)).data,
   getRotations: async (chamaId: string) =>
-    (await api.get<Rotation[]>(`/chamas/${chamaId}/rotations`)).data
+    (await api.get<Rotation[]>(`/chamas/${chamaId}/rotations`)).data,
+  getProposals: async (chamaId: string, filters?: { status?: ProposalStatus; type?: ProposalType }) =>
+    (await api.get<TxProposal[]>(`/chamas/${chamaId}/treasury/proposals`, { params: filters })).data,
+  getProposal: async (chamaId: string, proposalId: string) =>
+    (await api.get<TxProposal>(`/chamas/${chamaId}/treasury/proposals/${proposalId}`)).data,
+  approveProposal: async (chamaId: string, proposalId: string, pin: string, deviceMeta?: Record<string, unknown>) =>
+    (await api.post<TxProposal>(`/chamas/${chamaId}/treasury/proposals/${proposalId}/approve`, { pin, deviceMeta })).data,
+  rejectProposal: async (chamaId: string, proposalId: string, pin: string, reason: string) =>
+    (await api.post<TxProposal>(`/chamas/${chamaId}/treasury/proposals/${proposalId}/reject`, { pin, reason })).data,
+  cancelProposal: async (chamaId: string, proposalId: string) => {
+    await api.post(`/chamas/${chamaId}/treasury/proposals/${proposalId}/cancel`);
+  },
+  getSignatories: async (chamaId: string) =>
+    (await api.get<ChamaSignatory[]>(`/chamas/${chamaId}/treasury/signatories`)).data,
+  addSignatory: async (chamaId: string, userId: string) =>
+    (await api.post<ChamaSignatory>(`/chamas/${chamaId}/treasury/signatories`, { userId })).data,
+  removeSignatory: async (chamaId: string, signatoryId: string) => {
+    await api.delete(`/chamas/${chamaId}/treasury/signatories/${signatoryId}`);
+  },
+  getTreasurySettings: async (chamaId: string) =>
+    (await api.get<TreasurySettings>(`/chamas/${chamaId}/treasury/settings`)).data,
+  updateTreasurySettings: async (chamaId: string, data: Partial<TreasurySettings>) =>
+    (await api.patch<TreasurySettings>(`/chamas/${chamaId}/treasury/settings`, data)).data,
+  getAnomalies: async (chamaId: string) =>
+    (await api.get<TxAnomaly[]>(`/chamas/${chamaId}/treasury/anomalies`)).data
 };
 
 export function cents(amount: number): string {

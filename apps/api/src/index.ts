@@ -10,6 +10,8 @@ import tableBankingRoutes from "./modules/engines/table-banking";
 import feeRoutes from "./modules/fees/fees.routes";
 import loanRoutes from "./modules/loans";
 import memberRoutes from "./modules/members";
+import treasuryRoutes from "./modules/treasury/treasury.routes";
+import { registerC2BUrls } from "./lib/mpesa";
 import { setChamaBroadcaster, setUserBroadcaster } from "./lib/websocket";
 import whatsappRoutes from "./modules/notifications/whatsapp.routes";
 import {
@@ -17,7 +19,9 @@ import {
   startContributionReminderWorker,
   startLoanRepaymentReminderWorker,
   startMpesaCallbackWorker,
-  startOverdueAlertWorker
+  startOverdueAlertWorker,
+  startProposalExecutorWorker,
+  startProposalExpiryWorker
 } from "./jobs";
 
 export function buildApi() {
@@ -73,6 +77,7 @@ export function buildApi() {
   app.register(memberRoutes);
   app.register(whatsappRoutes);
   app.register(feeRoutes);
+  app.register(treasuryRoutes);
 
   return app;
 }
@@ -83,11 +88,24 @@ if (process.env.NODE_ENV !== "test") {
     startMpesaCallbackWorker(),
     startContributionReminderWorker(),
     startOverdueAlertWorker(),
-    startLoanRepaymentReminderWorker()
+    startLoanRepaymentReminderWorker(),
+    startProposalExecutorWorker(),
+    startProposalExpiryWorker()
   ];
   scheduleNotificationJobs().catch((error) => app.log.error(error));
   const port = Number(process.env.PORT ?? 4000);
   const host = process.env.HOST ?? "0.0.0.0";
+
+  if (process.env.NODE_ENV === "production") {
+    const callbackBase = process.env.MPESA_CALLBACK_URL_BASE?.replace(/\/$/, "");
+    if (process.env.MPESA_SHORTCODE && callbackBase) {
+      registerC2BUrls({
+        shortCode: process.env.MPESA_SHORTCODE,
+        confirmationURL: `${callbackBase}/mpesa/c2b-callback`,
+        validationURL: `${callbackBase}/mpesa/c2b-validate`
+      }).catch((error) => app.log.error(error, "Failed to register M-Pesa C2B URLs"));
+    }
+  }
 
   for (const worker of workers) {
     worker.on("failed", (job, error) => {

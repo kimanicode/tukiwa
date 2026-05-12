@@ -17,7 +17,7 @@ export function PhoneInviteInput({
   function addPhone() {
     const next = phone.trim();
     if (!phoneRegex.test(next)) {
-      setError("Use a valid Kenyan phone number, e.g. 0712345678");
+      setError("Use a valid Kenyan phone number.");
       return;
     }
     if (phones.includes(next)) {
@@ -36,7 +36,7 @@ export function PhoneInviteInput({
           style={styles.input}
           keyboardType="phone-pad"
           maxLength={10}
-          placeholder="0712345678"
+          placeholder="07XXXXXXXX"
           placeholderTextColor={colors.textMuted}
           value={phone}
           onChangeText={setPhone}
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14
   },
-  button: { alignItems: "center", backgroundColor: colors.green, borderRadius: 18, justifyContent: "center", paddingHorizontal: 18 },
+  button: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 18, justifyContent: "center", paddingHorizontal: 18 },
   buttonText: { fontFamily: "sans-serif", color: colors.white, fontSize: 13, fontWeight: "900" },
   error: { fontFamily: "sans-serif", color: colors.red, fontSize: 12 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

@@ -1,15 +1,17 @@
 import type { ReactNode } from "react";
 import { router } from "expo-router";
+import { Bitcoin, HandCoins, House, Users, WalletMinimal } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View, type DimensionValue, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useThemeStore } from "../stores/theme.store";
 
 type BadgeTone = "green" | "navy" | "amber" | "red" | "teal" | "muted";
 type AvatarTone = "green" | "navy" | "amber" | "teal";
 
 export const colors = {
-  navy: "#007A35",
-  navyDark: "#005A27",
-  navyLight: "#DFF3E7",
+  navy: "#061A40",
+  navyDark: "#03102A",
+  navyLight: "#E6ECF7",
   blueText: "#CDEED8",
   green: "#007A35",
   green2: "#07913F",
@@ -33,25 +35,50 @@ export const colors = {
   white: "#FFFFFF"
 };
 
-const badgeTone: Record<BadgeTone, StyleProp<TextStyle>> = {
-  green: { backgroundColor: colors.greenLight, color: colors.green },
-  navy: { backgroundColor: colors.greenLight, color: colors.green },
-  amber: { backgroundColor: colors.amberLight, color: colors.amber },
-  red: { backgroundColor: colors.redLight, color: colors.red },
-  teal: { backgroundColor: colors.tealLight, color: colors.teal },
-  muted: { backgroundColor: "#F1F5F9", color: colors.textMuted }
+export const darkColors = {
+  ...colors,
+  navyLight: "#123C25",
+  blueText: "#CDEED8",
+  greenLight: "#123C25",
+  greenSoft: "#0F2D1C",
+  tealLight: "#12372E",
+  amberLight: "#3D2D12",
+  redLight: "#3D1717",
+  canvas: "#07120C",
+  surface: "#101C14",
+  text: "#F3F8F0",
+  textMuted: "#A9B8AB",
+  line: "#243326"
 };
 
-const avatarTone: Record<AvatarTone, { box: ViewStyle; text: TextStyle }> = {
-  green: { box: { backgroundColor: colors.greenLight }, text: { color: colors.green } },
-  navy: { box: { backgroundColor: colors.greenLight }, text: { color: colors.green } },
-  amber: { box: { backgroundColor: colors.amberLight }, text: { color: colors.amber } },
-  teal: { box: { backgroundColor: colors.tealLight }, text: { color: colors.teal } }
+export function useThemeColors() {
+  return useThemeStore((state) => (state.resolvedTheme === "dark" ? darkColors : colors));
+}
+
+function badgeStyles(theme: typeof colors): Record<BadgeTone, StyleProp<TextStyle>> {
+  return {
+    green: { backgroundColor: theme.greenLight, color: theme.greenBright },
+    navy: { backgroundColor: theme.greenLight, color: theme.greenBright },
+    amber: { backgroundColor: theme.amberLight, color: theme.amber },
+    red: { backgroundColor: theme.redLight, color: theme.red },
+    teal: { backgroundColor: theme.tealLight, color: theme.teal },
+    muted: { backgroundColor: theme === darkColors ? "#17251B" : "#F1F5F9", color: theme.textMuted }
+  };
 };
+
+function avatarStyles(theme: typeof colors): Record<AvatarTone, { box: ViewStyle; text: TextStyle }> {
+  return {
+    green: { box: { backgroundColor: theme.greenLight }, text: { color: theme.greenBright } },
+    navy: { box: { backgroundColor: theme.greenLight }, text: { color: theme.greenBright } },
+    amber: { box: { backgroundColor: theme.amberLight }, text: { color: theme.amber } },
+    teal: { box: { backgroundColor: theme.tealLight }, text: { color: theme.teal } }
+  };
+}
 
 export function Screen({ children }: { children: ReactNode }) {
+  const theme = useThemeColors();
   return (
-    <SafeAreaView edges={["top"]} style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={[styles.screen, { backgroundColor: theme.canvas }]}>
       {children}
     </SafeAreaView>
   );
@@ -68,17 +95,18 @@ export function AppHeader({
   action?: ReactNode;
   back?: boolean;
 }) {
+  const theme = useThemeColors();
   return (
-    <View style={styles.appHeader}>
+    <View style={[styles.appHeader, { borderBottomColor: theme.line }]}>
       <View style={styles.headerLeft}>
         {back ? (
-          <Pressable style={styles.backCircle} onPress={() => router.back()}>
-            <Text style={styles.backArrow}>‹</Text>
+          <Pressable style={[styles.backCircle, { backgroundColor: theme === darkColors ? "#17251B" : "#F1EEE4" }]} onPress={() => router.back()}>
+            <Text style={[styles.backArrow, { color: theme.text }]}>‹</Text>
           </Pressable>
         ) : null}
         <View>
-          <Text style={styles.appHeaderTitle}>{title}</Text>
-          {subtitle ? <Text style={styles.appHeaderSub}>{subtitle}</Text> : null}
+          <Text style={[styles.appHeaderTitle, { color: theme.text }]}>{title}</Text>
+          {subtitle ? <Text style={[styles.appHeaderSub, { color: theme.textMuted }]}>{subtitle}</Text> : null}
         </View>
       </View>
       {action}
@@ -87,15 +115,17 @@ export function AppHeader({
 }
 
 export function CircleButton({ label, onPress, muted }: { label: string; onPress?: () => void; muted?: boolean }) {
+  const theme = useThemeColors();
   return (
-    <Pressable style={muted ? styles.circleButtonMuted : styles.circleButton} onPress={onPress}>
-      <Text style={muted ? styles.circleButtonTextMuted : styles.circleButtonText}>{label}</Text>
+    <Pressable style={[muted ? styles.circleButtonMuted : styles.circleButton, muted ? { backgroundColor: theme === darkColors ? "#17251B" : "#F1EEE4" } : null]} onPress={onPress}>
+      <Text style={[muted ? styles.circleButtonTextMuted : styles.circleButtonText, muted ? { color: theme.text } : null]}>{label}</Text>
     </Pressable>
   );
 }
 
 export function BottomNav({ active }: { active: "Home" | "Chamas" | "Loans" | "Invest" | "Wallet" }) {
   const insets = useSafeAreaInsets();
+  const theme = useThemeColors();
   const items: Array<{ label: "Home" | "Chamas" | "Loans" | "Invest" | "Wallet"; icon: string; path: string }> = [
     { label: "Home", icon: "⌂", path: "/(app)" },
     { label: "Chamas", icon: "♙", path: "/(app)/chamas" },
@@ -105,15 +135,27 @@ export function BottomNav({ active }: { active: "Home" | "Chamas" | "Loans" | "I
   ];
 
   return (
-    <View style={[styles.bottomNav, { height: 70 + insets.bottom, paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.bottomNav, { backgroundColor: theme.surface, borderTopColor: theme.line, height: 70 + insets.bottom, paddingBottom: Math.max(insets.bottom, 10) }]}>
       {items.map((item) => {
         const isActive = item.label === active;
         return (
           <Pressable key={item.label} style={styles.navItem} onPress={() => router.push(item.path as never)}>
-            <View style={isActive ? styles.navIconActive : styles.navIcon}>
-              <Text style={isActive ? styles.navIconTextActive : styles.navIconText}>{item.icon}</Text>
+            <View style={[isActive ? styles.navIconActive : styles.navIcon, isActive ? { backgroundColor: theme.greenLight } : null]}>
+              {item.label === "Home" ? (
+                <House color={isActive ? theme.greenBright : theme.textMuted} size={24} strokeWidth={isActive ? 2.6 : 2.2} />
+              ) : item.label === "Chamas" ? (
+                <Users color={isActive ? theme.greenBright : theme.textMuted} size={24} strokeWidth={isActive ? 2.6 : 2.2} />
+              ) : item.label === "Loans" ? (
+                <HandCoins color={isActive ? theme.greenBright : theme.textMuted} size={24} strokeWidth={isActive ? 2.6 : 2.2} />
+              ) : item.label === "Invest" ? (
+                <Bitcoin color={isActive ? theme.greenBright : theme.textMuted} size={24} strokeWidth={isActive ? 2.6 : 2.2} />
+              ) : item.label === "Wallet" ? (
+                <WalletMinimal color={isActive ? theme.greenBright : theme.textMuted} size={24} strokeWidth={isActive ? 2.6 : 2.2} />
+              ) : (
+                <Text style={[isActive ? styles.navIconTextActive : styles.navIconText, { color: isActive ? theme.greenBright : theme.textMuted }]}>{item.icon}</Text>
+              )}
             </View>
-            <Text style={isActive ? styles.navLabelActive : styles.navLabel}>{item.label}</Text>
+            <Text style={[isActive ? styles.navLabelActive : styles.navLabel, { color: isActive ? theme.greenBright : theme.textMuted }]}>{item.label}</Text>
           </Pressable>
         );
       })}
@@ -126,7 +168,8 @@ export function GreenPanel({ children, style }: { children: ReactNode; style?: S
 }
 
 export function SoftCard({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return <View style={[styles.softCard, style]}>{children}</View>;
+  const theme = useThemeColors();
+  return <View style={[styles.softCard, { backgroundColor: theme.surface, borderColor: theme.line }, style]}>{children}</View>;
 }
 
 export function Pill({ children, active }: { children: ReactNode; active?: boolean }) {
@@ -171,18 +214,23 @@ export function TopMetric({ label, value, accent }: { label: string; value: stri
 }
 
 export function Card({ children, compact, style }: { children: ReactNode; compact?: boolean; style?: StyleProp<ViewStyle> }) {
-  return <View style={[styles.card, compact ? styles.cardCompact : null, style]}>{children}</View>;
+  const theme = useThemeColors();
+  return <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }, compact ? styles.cardCompact : null, style]}>{children}</View>;
 }
 
 export function CardTitle({ children }: { children: ReactNode }) {
-  return <Text style={styles.cardTitle}>{children}</Text>;
+  const theme = useThemeColors();
+  return <Text style={[styles.cardTitle, { color: theme.textMuted }]}>{children}</Text>;
 }
 
 export function Badge({ children, tone = "muted" }: { children: ReactNode; tone?: BadgeTone }) {
-  return <Text style={[styles.badge, badgeTone[tone]]}>{children}</Text>;
+  const theme = useThemeColors();
+  return <Text style={[styles.badge, badgeStyles(theme)[tone]]}>{children}</Text>;
 }
 
 export function Avatar({ label, tone = "navy" }: { label: string; tone?: AvatarTone }) {
+  const theme = useThemeColors();
+  const avatarTone = avatarStyles(theme);
   return (
     <View style={[styles.avatar, avatarTone[tone].box]}>
       <Text style={[styles.avatarText, avatarTone[tone].text]}>{initials(label)}</Text>
@@ -201,13 +249,14 @@ export function RowItem({
   right?: ReactNode;
   avatarTone?: AvatarTone;
 }) {
+  const theme = useThemeColors();
   return (
-    <View style={styles.rowItem}>
+    <View style={[styles.rowItem, { borderBottomColor: theme.line }]}>
       <View style={styles.rowLeft}>
         <Avatar label={title} tone={tone} />
         <View style={styles.rowTextWrap}>
-          <Text style={styles.rowName} numberOfLines={1}>{title}</Text>
-          {subtitle ? <Text style={styles.rowSub} numberOfLines={1}>{subtitle}</Text> : null}
+          <Text style={[styles.rowName, { color: theme.text }]} numberOfLines={1}>{title}</Text>
+          {subtitle ? <Text style={[styles.rowSub, { color: theme.textMuted }]} numberOfLines={1}>{subtitle}</Text> : null}
         </View>
       </View>
       {right ? <View style={styles.rowRight}>{right}</View> : null}
@@ -235,11 +284,12 @@ export function PrimaryButton({
   tone?: "navy" | "green" | "outline";
   style?: StyleProp<ViewStyle>;
 }) {
+  const theme = useThemeColors();
   return (
     <Pressable
       style={[
         styles.button,
-        tone === "outline" ? styles.buttonOutline : tone === "green" ? styles.buttonGreen : styles.buttonNavy,
+        tone === "outline" ? [styles.buttonOutline, { borderColor: theme.line }] : tone === "green" ? styles.buttonGreen : styles.buttonNavy,
         style
       ]}
       onPress={onPress}
@@ -283,7 +333,7 @@ export const ui = StyleSheet.create({
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.navy,
     elevation: 6
   },
   fabText: { fontFamily: "sans-serif", color: colors.white, fontSize: 30, lineHeight: 34, fontWeight: "300" }
@@ -305,7 +355,7 @@ const styles = StyleSheet.create({
   appHeaderSub: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12, marginTop: 3 },
   backCircle: { alignItems: "center", backgroundColor: "#F1EEE4", borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   backArrow: { fontFamily: "sans-serif", color: colors.text, fontSize: 27, lineHeight: 29 },
-  circleButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
+  circleButton: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   circleButtonMuted: { alignItems: "center", backgroundColor: "#F1EEE4", borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
   circleButtonText: { fontFamily: "sans-serif", color: colors.white, fontSize: 20, fontWeight: "800", lineHeight: 22 },
   circleButtonTextMuted: { fontFamily: "sans-serif", color: colors.text, fontSize: 18, fontWeight: "800", lineHeight: 20 },
@@ -352,7 +402,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14
   },
   pill: { backgroundColor: "#F1EEE4", borderRadius: 18, paddingHorizontal: 15, paddingVertical: 8 },
-  pillActive: { backgroundColor: colors.green, borderRadius: 18, paddingHorizontal: 15, paddingVertical: 8 },
+  pillActive: { backgroundColor: colors.navy, borderRadius: 18, paddingHorizontal: 15, paddingVertical: 8 },
   pillText: { fontFamily: "sans-serif", color: colors.text, fontSize: 12, fontWeight: "600" },
   pillTextActive: { fontFamily: "sans-serif", color: colors.white, fontSize: 12, fontWeight: "800" },
   topbar: { backgroundColor: colors.green, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
@@ -381,11 +431,11 @@ const styles = StyleSheet.create({
   progressTrack: { backgroundColor: "#F1F5F9", borderRadius: 999, height: 6, marginTop: 8, overflow: "hidden" },
   progressFill: { borderRadius: 999, height: 6 },
   button: { borderRadius: 14, paddingVertical: 15 },
-  buttonNavy: { backgroundColor: colors.green },
-  buttonGreen: { backgroundColor: colors.green },
-  buttonOutline: { backgroundColor: "transparent", borderColor: colors.line, borderWidth: StyleSheet.hairlineWidth },
+  buttonNavy: { backgroundColor: colors.navy },
+  buttonGreen: { backgroundColor: colors.navy },
+  buttonOutline: { backgroundColor: colors.navy, borderColor: colors.navy, borderWidth: StyleSheet.hairlineWidth },
   buttonText: { fontFamily: "sans-serif", color: colors.white, fontSize: 14, fontWeight: "700", textAlign: "center" },
-  buttonTextOutline: { color: colors.text },
+  buttonTextOutline: { color: colors.white },
   statRow: { flexDirection: "row", gap: 8 },
   statBox: { backgroundColor: "#F8FAFC", borderRadius: 8, flex: 1, paddingHorizontal: 10, paddingVertical: 10 },
   statLabel: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 11 },

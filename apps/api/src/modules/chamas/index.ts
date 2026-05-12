@@ -2,6 +2,7 @@ import { MemberRole } from "@prisma/client";
 import type { FastifyPluginAsync } from "fastify";
 import {
   createChamaSchema,
+  governanceSettingsSchema,
   inviteMemberSchema,
   updateChamaSettingsSchema,
   updateChamaSchema,
@@ -38,6 +39,12 @@ const chamaRoutes: FastifyPluginAsync<ChamaRoutesOptions> = async (fastify, opti
     return reply.send(chama);
   });
 
+  fastify.get("/chamas/:id/funds/summary", async (request, reply) => {
+    const params = paramsSchema.parse(request.params);
+    const summary = await service.getFundsSummary(params.id, request.user.id);
+    return reply.send(summary);
+  });
+
   fastify.patch("/chamas/:id", { preHandler: adminOnly }, async (request, reply) => {
     const params = paramsSchema.parse(request.params);
     const body = updateChamaSchema.parse(request.body);
@@ -51,6 +58,17 @@ const chamaRoutes: FastifyPluginAsync<ChamaRoutesOptions> = async (fastify, opti
     const settings = await service.updateChamaSettings(params.id, request.user.id, body);
     return reply.send(settings);
   });
+
+  fastify.patch(
+    "/chamas/:id/settings/governance",
+    { preHandler: adminOnly },
+    async (request, reply) => {
+      const params = paramsSchema.parse(request.params);
+      const body = governanceSettingsSchema.parse(request.body);
+      const settings = await service.updateGovernanceSettings(params.id, request.user.id, body);
+      return reply.send(settings);
+    }
+  );
 
   fastify.post(
     "/chamas/:id/members",

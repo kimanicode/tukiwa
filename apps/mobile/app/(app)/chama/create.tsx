@@ -20,7 +20,7 @@ import { useChamaStore } from "../../../stores/chama.store";
 
 type SharedCreateChamaData = z.infer<typeof createChamaSchema>;
 type ChamaType = SharedCreateChamaData["type"] | "HYBRID";
-type StepId = "basics" | "contributions" | "members" | "payments" | "rotations" | "loans" | "investments" | "governance" | "review";
+type StepId = "basics" | "contributions" | "members" | "payments" | "rotations" | "loans" | "investments" | "review";
 type SubmitState = "idle" | "creating" | "inviting" | "success" | "error";
 
 type ChamaFormData = Omit<SharedCreateChamaData, "type"> & {
@@ -61,13 +61,6 @@ type ChamaFormData = Omit<SharedCreateChamaData, "type"> & {
   investmentContributionAmount: number;
   riskLevel: "low" | "medium" | "high";
   profitSharingMethod: "equal_share" | "based_on_contribution" | "custom_percentage";
-  votingRule: "simple_majority" | "two_thirds" | "admin_only";
-  withdrawalPolicy: string;
-  memberExitPolicy: string;
-  refundPolicy: string;
-  disputeResolutionMethod: string;
-  meetingFrequency: "weekly" | "monthly" | "quarterly" | "as_needed";
-  recordVisibility: "everyone_sees_everything" | "members_see_own_records" | "admin_only_reports";
 };
 
 const stepMeta: Record<StepId, { title: string; subtitle: string }> = {
@@ -78,7 +71,6 @@ const stepMeta: Record<StepId, { title: string; subtitle: string }> = {
   rotations: { title: "Merry-go-round", subtitle: "Configure payout cadence and rotation order." },
   loans: { title: "Loan settings", subtitle: "Define table banking eligibility, limits, interest, and approvals." },
   investments: { title: "Investment settings", subtitle: "Set the group investment target and profit-sharing model." },
-  governance: { title: "Governance & rules", subtitle: "Document decision-making, exits, refunds, and record visibility." },
   review: { title: "Review & create", subtitle: "Confirm every section before creating the chama." }
 };
 
@@ -122,14 +114,7 @@ const defaults: ChamaFormData = {
   targetAmount: 0,
   investmentContributionAmount: 0,
   riskLevel: "medium",
-  profitSharingMethod: "based_on_contribution",
-  votingRule: "simple_majority",
-  withdrawalPolicy: "",
-  memberExitPolicy: "",
-  refundPolicy: "",
-  disputeResolutionMethod: "",
-  meetingFrequency: "monthly",
-  recordVisibility: "everyone_sees_everything"
+  profitSharingMethod: "based_on_contribution"
 };
 
 export default function CreateChamaScreen() {
@@ -258,7 +243,6 @@ export default function CreateChamaScreen() {
           {currentStep === "rotations" ? <RotationsStep values={values} setField={setField} errors={errors} /> : null}
           {currentStep === "loans" ? <LoansStep values={values} setField={setField} errors={errors} /> : null}
           {currentStep === "investments" ? <InvestmentsStep values={values} setField={setField} errors={errors} /> : null}
-          {currentStep === "governance" ? <GovernanceStep values={values} setField={setField} errors={errors} /> : null}
           {currentStep === "review" ? <ReviewStep values={values} inviteLink={inviteLink} /> : null}
           {currentStep === "review" && submitError ? (
             <View style={styles.errorBanner}>
@@ -285,7 +269,7 @@ function BasicsStep({ values, setField, errors }: StepProps) {
     <>
       <FormSection title="Identity">
         <Field label="Chama name" error={errors.name}>
-          <TextInput style={styles.input} placeholder="e.g. Umoja Sisters Chama" placeholderTextColor={colors.textMuted} value={values.name} onChangeText={(text) => setField("name", text)} />
+          <TextInput style={styles.input} placeholder="Chama name" placeholderTextColor={colors.textMuted} value={values.name} onChangeText={(text) => setField("name", text)} />
         </Field>
         <Field label="Description">
           <TextInput style={[styles.input, styles.textArea]} multiline placeholder="What is this chama for?" placeholderTextColor={colors.textMuted} value={values.description ?? ""} onChangeText={(text) => setField("description", text)} />
@@ -471,24 +455,6 @@ function InvestmentsStep({ values, setField, errors }: StepProps) {
   );
 }
 
-function GovernanceStep({ values, setField, errors }: StepProps) {
-  return (
-    <>
-      <FormSection title="Decision rules">
-        <ChipGroup value={values.votingRule} options={["simple_majority", "two_thirds", "admin_only"]} onChange={(value) => setField("votingRule", value as ChamaFormData["votingRule"])} />
-        <ChipGroup value={values.meetingFrequency} options={["weekly", "monthly", "quarterly", "as_needed"]} onChange={(value) => setField("meetingFrequency", value as ChamaFormData["meetingFrequency"])} />
-        <ChipGroup value={values.recordVisibility} options={["everyone_sees_everything", "members_see_own_records", "admin_only_reports"]} onChange={(value) => setField("recordVisibility", value as ChamaFormData["recordVisibility"])} />
-      </FormSection>
-      <FormSection title="Written policies">
-        <PolicyInput label="Withdrawal policy" value={values.withdrawalPolicy} onChange={(text) => setField("withdrawalPolicy", text)} error={errors.withdrawalPolicy} multiline />
-        <PolicyInput label="Member exit policy" value={values.memberExitPolicy} onChange={(text) => setField("memberExitPolicy", text)} error={errors.memberExitPolicy} multiline />
-        <PolicyInput label="Refund policy" value={values.refundPolicy} onChange={(text) => setField("refundPolicy", text)} error={errors.refundPolicy} multiline />
-        <PolicyInput label="Dispute resolution" value={values.disputeResolutionMethod} onChange={(text) => setField("disputeResolutionMethod", text)} error={errors.disputeResolutionMethod} />
-      </FormSection>
-    </>
-  );
-}
-
 function ReviewStep({ values, inviteLink }: { values: ChamaFormData; inviteLink: string }) {
   return (
     <>
@@ -535,11 +501,12 @@ function ReviewStep({ values, inviteLink }: { values: ChamaFormData; inviteLink:
           <ReviewItem label="Risk" value={titleCase(values.riskLevel)} />
         </ReviewSection>
       ) : null}
-      <ReviewSection title="Governance">
-        <ReviewItem label="Voting" value={titleCase(values.votingRule)} />
-        <ReviewItem label="Meetings" value={titleCase(values.meetingFrequency)} />
-        <ReviewItem label="Records" value={titleCase(values.recordVisibility)} />
-      </ReviewSection>
+      <SoftCard style={styles.governanceInfoCard}>
+        <Text style={styles.governanceInfoTitle}>⚙ Governance & Rules</Text>
+        <Text style={styles.governanceInfoText}>
+          Default policies have been applied to your chama. You can review and customise them anytime from Chama Settings.
+        </Text>
+      </SoftCard>
       <InviteShareCard link={inviteLink} />
     </>
   );
@@ -558,14 +525,6 @@ function Field({ label, error, children }: { label: string; error?: string; chil
       {children}
       {error ? <ErrorText>{error}</ErrorText> : null}
     </View>
-  );
-}
-
-function PolicyInput({ label, value, onChange, error, multiline }: { label: string; value: string; onChange: (value: string) => void; error?: string; multiline?: boolean }) {
-  return (
-    <Field label={label} error={error}>
-      <TextInput style={[styles.input, multiline ? styles.textArea : null]} multiline={multiline} placeholder={label} placeholderTextColor={colors.textMuted} value={value} onChangeText={onChange} />
-    </Field>
   );
 }
 
@@ -670,7 +629,6 @@ function visibleSteps(type: ChamaType): StepId[] {
     ...(hasRotations(type) ? (["rotations"] as StepId[]) : []),
     ...(hasLoans(type) ? (["loans"] as StepId[]) : []),
     ...(hasInvestments(type) ? (["investments"] as StepId[]) : []),
-    "governance",
     "review"
   ];
 }
@@ -713,12 +671,6 @@ function validateStep(step: StepId, values: ChamaFormData): Record<string, strin
     if (values.targetAmount <= 0) next.targetAmount = "Target amount is required";
     if (values.investmentContributionAmount <= 0) next.investmentContributionAmount = "Investment contribution is required";
   }
-  if (step === "governance") {
-    if (!values.withdrawalPolicy.trim()) next.withdrawalPolicy = "Withdrawal policy is required";
-    if (!values.memberExitPolicy.trim()) next.memberExitPolicy = "Member exit policy is required";
-    if (!values.refundPolicy.trim()) next.refundPolicy = "Refund policy is required";
-    if (!values.disputeResolutionMethod.trim()) next.disputeResolutionMethod = "Dispute resolution method is required";
-  }
   if (step === "review") {
     for (const visible of visibleSteps(values.type)) {
       if (visible === "review") continue;
@@ -753,9 +705,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0
   },
-  backButton: { alignItems: "center", backgroundColor: "#F1EEE4", borderRadius: 18, flex: 1, paddingVertical: 15 },
-  backText: { fontFamily: "sans-serif", color: colors.text, fontSize: 13, fontWeight: "900" },
-  nextButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 18, flex: 1.4, flexDirection: "row", gap: 8, justifyContent: "center", paddingVertical: 15 },
+  backButton: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 18, flex: 1, paddingVertical: 15 },
+  backText: { fontFamily: "sans-serif", color: colors.white, fontSize: 13, fontWeight: "900" },
+  nextButton: { alignItems: "center", backgroundColor: colors.navy, borderRadius: 18, flex: 1.4, flexDirection: "row", gap: 8, justifyContent: "center", paddingVertical: 15 },
   nextText: { fontFamily: "sans-serif", color: colors.white, fontSize: 13, fontWeight: "900" },
   field: { gap: 7 },
   label: { fontFamily: "sans-serif", color: colors.text, fontSize: 12, fontWeight: "900" },
@@ -776,7 +728,7 @@ const styles = StyleSheet.create({
   optionGrid: { gap: 10 },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { backgroundColor: "#F1EEE4", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  chipActive: { backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  chipActive: { backgroundColor: colors.navy, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   chipText: { fontFamily: "sans-serif", color: colors.text, fontSize: 12, fontWeight: "800" },
   chipTextActive: { fontFamily: "sans-serif", color: colors.white, fontSize: 12, fontWeight: "900" },
   error: { fontFamily: "sans-serif", color: colors.red, fontSize: 12 },
@@ -790,6 +742,9 @@ const styles = StyleSheet.create({
   previewName: { fontFamily: "sans-serif", color: colors.text, flex: 1, fontSize: 14, fontWeight: "900" },
   previewDate: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 12 },
   reviewCard: { paddingBottom: 6 },
+  governanceInfoCard: { backgroundColor: "#F7F4EA", gap: 8 },
+  governanceInfoTitle: { fontFamily: "sans-serif", color: colors.text, fontSize: 15, fontWeight: "900" },
+  governanceInfoText: { fontFamily: "sans-serif", color: colors.textMuted, fontSize: 13, lineHeight: 19 },
   successWrap: { gap: 14, padding: 20 },
   successCard: { alignItems: "center", gap: 12, paddingVertical: 30 },
   warningBanner: { backgroundColor: colors.amberLight, borderRadius: 18, padding: 13 },

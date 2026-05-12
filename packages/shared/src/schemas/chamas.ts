@@ -48,6 +48,29 @@ export const updateChamaSettingsSchema = z
     message: "At least one settings field is required"
   });
 
+export const governanceSettingsSchema = z
+  .object({
+    votingRule: z.enum(["simple_majority", "two_thirds", "admin_only"]).optional(),
+    withdrawalPolicy: z.string().max(500).optional(),
+    memberExitPolicy: z.string().max(500).optional(),
+    refundPolicy: z.string().max(500).optional(),
+    disputeResolutionMethod: z.string().max(500).optional(),
+    meetingFrequency: z.enum(["weekly", "monthly", "quarterly", "as_needed"]).optional(),
+    recordVisibility: z
+      .enum([
+        "everyone_sees_everything",
+        "members_see_own_records",
+        "admin_only_reports"
+      ])
+      .optional(),
+    treasuryEnabled: z.boolean().optional(),
+    requiredApprovals: z.number().int().min(1).max(10).optional(),
+    proposalThresholdCents: z.number().int().min(0).optional()
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one governance field is required"
+  });
+
 export const inviteMemberSchema = z.object({
   phone: z.string().min(9).max(16)
 });
@@ -69,6 +92,7 @@ export const updateMeSchema = z
 export type CreateChamaInput = z.infer<typeof createChamaSchema>;
 export type UpdateChamaInput = z.infer<typeof updateChamaSchema>;
 export type UpdateChamaSettingsInput = z.infer<typeof updateChamaSettingsSchema>;
+export type GovernanceSettingsInput = z.infer<typeof governanceSettingsSchema>;
 export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;
 export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>;
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;

@@ -26,6 +26,22 @@ const stkCallbackSchema = z.object({
   })
 });
 
+const c2bCallbackSchema = z.object({
+  TransactionType: z.string(),
+  TransID: z.string(),
+  TransTime: z.string(),
+  TransAmount: z.union([z.string(), z.number()]),
+  BusinessShortCode: z.string(),
+  BillRefNumber: z.string(),
+  InvoiceNumber: z.string().optional(),
+  OrgAccountBalance: z.union([z.string(), z.number()]).optional(),
+  ThirdPartyTransID: z.string().optional(),
+  MSISDN: z.union([z.string(), z.number()]),
+  FirstName: z.string().optional(),
+  MiddleName: z.string().optional(),
+  LastName: z.string().optional()
+});
+
 export type MpesaCallback = {
   merchantRequestId: string;
   checkoutRequestId: string;
@@ -36,6 +52,8 @@ export type MpesaCallback = {
   transactionDate?: string;
   phoneNumber?: string;
 };
+
+export type C2BCallbackPayload = z.infer<typeof c2bCallbackSchema>;
 
 type RedisLike = {
   get(key: string): Promise<string | null>;
@@ -154,6 +172,29 @@ export class MpesaClient {
 
     return { conversationId: response.data.ConversationID };
   }
+
+  async registerC2BUrls(input: {
+    shortCode: string;
+    confirmationURL: string;
+    validationURL: string;
+  }): Promise<void> {
+    const token = await this.getAccessToken();
+
+    await axios.post(
+      `${baseUrl()}/mpesa/c2b/v1/registerurl`,
+      {
+        ShortCode: input.shortCode,
+        ResponseType: "Completed",
+        ConfirmationURL: input.confirmationURL,
+        ValidationURL: input.validationURL
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+  }
 }
 
 const defaultClient = new MpesaClient();
@@ -179,6 +220,14 @@ export function b2cTransfer(
   return defaultClient.b2cTransfer(phone, amount, remarks);
 }
 
+export function registerC2BUrls(input: {
+  shortCode: string;
+  confirmationURL: string;
+  validationURL: string;
+}): Promise<void> {
+  return defaultClient.registerC2BUrls(input);
+}
+
 export function validateCallback(payload: unknown): MpesaCallback {
   const parsed = stkCallbackSchema.parse(payload).Body.stkCallback;
   const metadata = parsed.CallbackMetadata?.Item ?? [];
@@ -192,6 +241,15 @@ export function validateCallback(payload: unknown): MpesaCallback {
     receiptNumber: stringValue(metadata, "MpesaReceiptNumber"),
     transactionDate: stringValue(metadata, "TransactionDate"),
     phoneNumber: stringValue(metadata, "PhoneNumber")
+  };
+}
+
+export function validateC2BCallback(payload: unknown): C2BCallbackPayload {
+  const parsed = c2bCallbackSchema.parse(payload);
+  return {
+    ...parsed,
+    TransAmount: String(parsed.TransAmount),
+    MSISDN: String(parsed.MSISDN)
   };
 }
 

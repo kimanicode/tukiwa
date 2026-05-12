@@ -1,7 +1,7 @@
 import { FeeStatus, FeeTransactionType, MemberRole, type PlatformFee, type PrismaClient } from "@prisma/client";
 import { prisma as defaultPrisma } from "../../lib/prisma";
 
-export type DeductionModel = "on_top" | "deducted";
+export type DeductionModel = "on_top" | "deducted" | "split_payments";
 
 type FeeScheduleEntry = {
   rate: number;
@@ -15,7 +15,7 @@ export const feeSchedule: Record<FeeTransactionType, FeeScheduleEntry> = {
     rate: 0.008,
     minFee: 500,
     maxFee: 15000,
-    deductionModel: "on_top"
+    deductionModel: "split_payments"
   },
   [FeeTransactionType.LOAN_DISBURSEMENT]: {
     rate: 0.01,
@@ -27,7 +27,7 @@ export const feeSchedule: Record<FeeTransactionType, FeeScheduleEntry> = {
     rate: 0.005,
     minFee: 500,
     maxFee: 20000,
-    deductionModel: "on_top"
+    deductionModel: "split_payments"
   },
   [FeeTransactionType.ROTATION_PAYOUT]: {
     rate: 0.008,
@@ -66,9 +66,9 @@ export function calculateFee(
   const rawFee = Math.round(grossAmountCents * schedule.rate);
   const feeAmount = Math.min(Math.max(rawFee, schedule.minFee), schedule.maxFee);
   const netAmount =
-    schedule.deductionModel === "on_top"
-      ? grossAmountCents
-      : Math.max(grossAmountCents - feeAmount, 0);
+    schedule.deductionModel === "deducted"
+      ? Math.max(grossAmountCents - feeAmount, 0)
+      : grossAmountCents;
 
   return {
     feeAmount,
@@ -90,6 +90,7 @@ export async function createFeeRecord(
     feeRate: number;
     chamaId: string;
     memberId?: string | null;
+    status?: FeeStatus;
   }
 ): Promise<PlatformFee> {
   return prisma.platformFee.create({
@@ -101,6 +102,7 @@ export async function createFeeRecord(
       feeAmount: input.feeAmount,
       netAmount: input.netAmount,
       feeRate: input.feeRate,
+      status: input.status,
       chamaId: input.chamaId,
       memberId: input.memberId ?? null
     }
@@ -154,7 +156,7 @@ export class FeeService {
   async getPlatformRevenueSummary(filters: { from?: Date; to?: Date } = {}) {
     const fees = await this.prisma.platformFee.findMany({
       where: {
-        status: FeeStatus.SETTLED,
+        status: { in: [FeeStatus.SETTLED, FeeStatus.SPLIT] },
         createdAt: {
           gte: filters.from,
           lte: filters.to

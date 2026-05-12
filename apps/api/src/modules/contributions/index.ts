@@ -4,7 +4,8 @@ import {
   initiateContributionSchema
 } from "@chama/shared";
 import { z } from "zod";
-import { validateCallback } from "../../lib/mpesa";
+import { validateC2BCallback, validateCallback } from "../../lib/mpesa";
+import { isSafaricomIP } from "../../lib/mpesa/callback-security";
 import { requireAuth } from "../../plugins/auth";
 import { getMpesaCallbackQueue } from "../../jobs/mpesa-callback.queue";
 import { ContributionError, ContributionService } from "./service";
@@ -31,9 +32,27 @@ const contributionRoutes: FastifyPluginAsync<ContributionRoutesOptions> = async 
   const queue = options.queue ?? getMpesaCallbackQueue();
 
   fastify.post("/mpesa/callback", async (request, reply) => {
+    if (!isSafaricomIP(request.ip)) {
+      request.log.warn({ ip: request.ip }, "Rejected M-Pesa callback from unexpected IP");
+      return reply.status(403).send({ message: "forbidden" });
+    }
     const callback = validateCallback(request.body);
     await queue.add("process", { callback }, { jobId: callback.checkoutRequestId });
     return reply.status(200).send({ message: "accepted" });
+  });
+
+  fastify.post("/mpesa/c2b-callback", async (request, reply) => {
+    if (!isSafaricomIP(request.ip)) {
+      request.log.warn({ ip: request.ip }, "Rejected M-Pesa C2B callback from unexpected IP");
+      return reply.status(403).send({ message: "forbidden" });
+    }
+    const c2bCallback = validateC2BCallback(request.body);
+    await queue.add("process-c2b", { c2bCallback }, { jobId: c2bCallback.TransID });
+    return reply.status(200).send({ message: "accepted" });
+  });
+
+  fastify.post("/mpesa/c2b-validate", async (_request, reply) => {
+    return reply.status(200).send({ ResultCode: "0", ResultDesc: "Accepted" });
   });
 
   fastify.register(async (protectedRoutes) => {

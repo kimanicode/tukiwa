@@ -18,7 +18,13 @@ export enum NotificationEvent {
   PAYOUT_SENT = "PAYOUT_SENT",
   CONTRIBUTION_REMINDER = "CONTRIBUTION_REMINDER",
   OVERDUE_ALERT = "OVERDUE_ALERT",
-  REPAYMENT_REMINDER = "REPAYMENT_REMINDER"
+  REPAYMENT_REMINDER = "REPAYMENT_REMINDER",
+  PROPOSAL_CREATED = "PROPOSAL_CREATED",
+  PROPOSAL_APPROVED = "PROPOSAL_APPROVED",
+  PROPOSAL_REJECTED = "PROPOSAL_REJECTED",
+  PROPOSAL_EXECUTED = "PROPOSAL_EXECUTED",
+  PROPOSAL_EXPIRED = "PROPOSAL_EXPIRED",
+  PROPOSAL_CANCELLED = "PROPOSAL_CANCELLED"
 }
 
 type UserRecord = {
@@ -150,6 +156,7 @@ function pushTitle(event: NotificationEvent): string {
 
 export function formatSms(event: NotificationEvent, data: Record<string, unknown>): string {
   const amount = typeof data.amount === "number" ? ` KES ${(data.amount / 100).toFixed(2)}` : "";
+  const message = typeof data.message === "string" ? data.message : undefined;
   switch (event) {
     case NotificationEvent.CONTRIBUTION_CONFIRMED:
       return `Your Tukiwa contribution${amount} has been confirmed.`;
@@ -160,11 +167,18 @@ export function formatSms(event: NotificationEvent, data: Record<string, unknown
     case NotificationEvent.PAYOUT_SENT:
       return `Your Tukiwa payout${amount} has been sent.`;
     case NotificationEvent.CONTRIBUTION_REMINDER:
-      return "Reminder: your Tukiwa contribution is due soon.";
+      return `Reminder: your Tukiwa contribution${amount} is due tomorrow. Please pay before the due date.`;
     case NotificationEvent.OVERDUE_ALERT:
       return "Alert: your Tukiwa contribution is overdue.";
     case NotificationEvent.REPAYMENT_REMINDER:
       return "Reminder: your Tukiwa loan repayment is due soon.";
+    case NotificationEvent.PROPOSAL_CREATED:
+    case NotificationEvent.PROPOSAL_APPROVED:
+    case NotificationEvent.PROPOSAL_REJECTED:
+    case NotificationEvent.PROPOSAL_EXECUTED:
+    case NotificationEvent.PROPOSAL_EXPIRED:
+    case NotificationEvent.PROPOSAL_CANCELLED:
+      return message ?? "A Tukiwa treasury proposal has been updated.";
     default:
       return "You have a Tukiwa notification.";
   }

@@ -1,4 +1,4 @@
-import { ContributionStatus, FeeTransactionType, LoanStatus } from "@prisma/client";
+import { ContributionStatus, FeeStatus, FeeTransactionType, LoanStatus } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import type {
   ContributionFiltersInput,
@@ -6,12 +6,13 @@ import type {
 } from "@chama/shared";
 import { prisma as defaultPrisma } from "../../lib/prisma";
 import { stkPush as defaultStkPush } from "../../lib/mpesa";
+import { isValidAccountRef } from "../../lib/mpesa/account-ref";
 import { normalizeKenyanPhone } from "../auth/service";
 import { calculateFee, createFeeRecord, voidFee } from "../fees/fee.service";
 
 type PrismaLike = Pick<
   PrismaClient,
-  "chamaMember" | "contribution" | "loan" | "auditLog" | "platformFee" | "$transaction"
+  "chama" | "chamaMember" | "contribution" | "loan" | "auditLog" | "platformFee" | "$transaction"
 >;
 
 export class ContributionError extends Error {
@@ -59,9 +60,20 @@ export class ContributionService {
 
     const normalizedPhone = normalizeKenyanPhone(phone);
     const dueDate = input.dueDate ? new Date(input.dueDate) : new Date();
+    const chama = await this.prisma.chama.findUnique({
+      where: { id: chamaId },
+      select: { name: true, mpesaAccountRef: true }
+    });
+
+    if (!chama?.mpesaAccountRef) {
+      throw new ContributionError(`Chama ${chamaId} has no mpesaAccountRef`, 400);
+    }
+
+    if (!isValidAccountRef(chama.mpesaAccountRef)) {
+      throw new ContributionError(`Chama ${chamaId} has invalid mpesaAccountRef`, 400);
+    }
 
     const fee = calculateFee(FeeTransactionType.CONTRIBUTION, input.amount);
-    const chargeAmount = input.amount + fee.feeAmount;
 
     const contribution = await this.prisma.$transaction(async (tx) => {
       const created = await tx.contribution.create({
@@ -71,6 +83,7 @@ export class ContributionService {
           amount: input.amount,
           feeAmount: fee.feeAmount,
           status: ContributionStatus.PENDING,
+          billRefNumber: chama.mpesaAccountRef,
           dueDate
         }
       });
@@ -84,7 +97,8 @@ export class ContributionService {
         netAmount: fee.netAmount,
         feeRate: fee.feeRate,
         chamaId,
-        memberId: member.id
+        memberId: member.id,
+        status: FeeStatus.SPLIT
       });
 
       return created;
@@ -93,9 +107,9 @@ export class ContributionService {
     try {
       const { checkoutRequestId } = await this.stkPush(
         normalizedPhone,
-        centsToKes(chargeAmount),
-        contribution.id,
-        "Tukiwa contribution"
+        centsToKes(input.amount),
+        chama.mpesaAccountRef,
+        `${chama.name} contribution`
       );
 
       return this.prisma.contribution.update({

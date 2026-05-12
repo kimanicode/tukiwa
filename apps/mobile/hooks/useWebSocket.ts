@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import { apiUrl } from "../lib/api";
+import { apiUrl, type TxProposal } from "../lib/api";
+import { useChamaStore } from "../stores/chama.store";
 
 type Handler = (payload: unknown) => void;
 
@@ -14,6 +15,13 @@ export function useWebSocket(chamaId?: string) {
     socketRef.current = socket;
     socket.onmessage = (message) => {
       const event = JSON.parse(message.data) as { type: string; payload: unknown };
+      if (isProposalEvent(event.type) && isProposalPayload(event.payload)) {
+        if (event.type === "PROPOSAL_CREATED") {
+          useChamaStore.getState().addProposal(event.payload);
+        } else {
+          useChamaStore.getState().updateProposal(event.payload.id, event.payload);
+        }
+      }
       handlersRef.current.get(event.type)?.forEach((handler) => handler(event.payload));
     };
     return () => {
@@ -30,4 +38,18 @@ export function useWebSocket(chamaId?: string) {
   }, []);
 
   return { socket: socketRef.current, onEvent };
+}
+
+function isProposalEvent(type: string): boolean {
+  return [
+    "PROPOSAL_CREATED",
+    "PROPOSAL_APPROVED",
+    "PROPOSAL_REJECTED",
+    "PROPOSAL_EXECUTED",
+    "PROPOSAL_EXPIRED"
+  ].includes(type);
+}
+
+function isProposalPayload(payload: unknown): payload is TxProposal {
+  return typeof payload === "object" && payload !== null && typeof (payload as TxProposal).id === "string";
 }

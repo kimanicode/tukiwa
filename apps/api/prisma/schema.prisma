@@ -23,6 +23,7 @@ enum MemberRole {
 
 enum LoanStatus {
   PENDING
+  PENDING_APPROVAL
   APPROVED
   REJECTED
   DISBURSED
@@ -79,16 +80,45 @@ enum FeeTransactionType {
 
 enum FeeStatus {
   PENDING
+  SPLIT
   SETTLED
   WAIVED
   FAILED
+}
+
+enum ProposalType {
+  LOAN_DISBURSEMENT
+  ROTATION_PAYOUT
+  INVESTMENT_PURCHASE
+  MANUAL_TRANSFER
+}
+
+enum ProposalStatus {
+  PENDING
+  APPROVED
+  EXECUTING
+  EXECUTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  FAILED
+}
+
+enum ApprovalAction {
+  APPROVED
+  REJECTED
 }
 
 model User {
   id            String        @id @default(uuid())
   phone         String        @unique
   fullName      String
-  nationalId    String?       @unique
+  nationalId    String?
+  nationalIdHash String?      @unique
+  pinHash       String?
+  pinSetAt      DateTime?
+  isProfileComplete Boolean   @default(false)
+  isPhoneVerified   Boolean   @default(false)
   pushToken     String?
   whatsappOptIn Boolean       @default(false)
   kycVerified   Boolean       @default(false)
@@ -99,12 +129,18 @@ model User {
   approvedLoans Loan[]        @relation("LoanApprover")
   otps          Otp[]
   auditLogs     AuditLog[]    @relation("AuditActor")
+  signatories   ChamaSignatory[]
+  proposedTxProposals TxProposal[] @relation("ProposedBy")
+  txProposalApprovals TxProposalApproval[]
 }
 
 model Chama {
   id            String          @id @default(uuid())
   name          String
   type          ChamaType
+  /// Short unique identifier used as M-Pesa account number.
+  /// Members enter this as the account number when paying to Tukiwa's Paybill.
+  mpesaAccountRef String        @unique
   description   String?
   logoUrl       String?
   currency      String          @default("KES")
@@ -120,6 +156,8 @@ model Chama {
   meetings      Meeting[]
   auditLogs     AuditLog[]
   platformFees  PlatformFee[]
+  signatories   ChamaSignatory[]
+  txProposals   TxProposal[]
 }
 
 model ChamaMember {
@@ -140,31 +178,108 @@ model ChamaMember {
 }
 
 model ChamaSettings {
-  id                     String @id @default(uuid())
-  chamaId                String @unique
-  contributionAmount     Int
-  contributionCycle      Cycle
-  loanInterestRate       Float
-  maxLoanMultiplier      Float
-  penaltyRate            Float
-  requiresMeetingForLoan Boolean
-  chama                  Chama  @relation(fields: [chamaId], references: [id])
+  id                       String @id @default(uuid())
+  chamaId                  String @unique
+  contributionAmount       Int
+  contributionCycle        Cycle
+  loanInterestRate         Float
+  maxLoanMultiplier        Float
+  penaltyRate              Float
+  requiresMeetingForLoan   Boolean
+  votingRule               String @default("simple_majority")
+  withdrawalPolicy         String @default("")
+  memberExitPolicy         String @default("")
+  refundPolicy             String @default("")
+  disputeResolutionMethod  String @default("")
+  meetingFrequency         String @default("monthly")
+  recordVisibility         String @default("members_see_own_records")
+  treasuryEnabled          Boolean @default(false)
+  requiredApprovals        Int     @default(2)
+  proposalThresholdCents   Int     @default(500000)
+  chama                    Chama  @relation(fields: [chamaId], references: [id])
+}
+
+model ChamaSignatory {
+  id        String    @id @default(uuid())
+  chamaId   String
+  userId    String
+  addedBy   String
+  isActive  Boolean   @default(true)
+  addedAt   DateTime  @default(now())
+  removedAt DateTime?
+
+  chama Chama @relation(fields: [chamaId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([chamaId, userId])
+  @@index([chamaId])
+  @@index([userId])
+}
+
+model TxProposal {
+  id                String           @id @default(uuid())
+  chamaId           String
+  proposedBy        String
+  type              ProposalType
+  status            ProposalStatus   @default(PENDING)
+  referenceId       String
+  referenceType     String
+  amount            Int
+  recipientPhone    String
+  recipientName     String
+  description       String
+  requiredApprovals Int
+  totalSignatories  Int
+  executedAt        DateTime?
+  expiredAt         DateTime?
+  mpesaRef          String?
+  failureReason     String?
+  createdAt         DateTime         @default(now())
+  expiresAt         DateTime
+
+  chama     Chama                @relation(fields: [chamaId], references: [id])
+  proposer  User                 @relation("ProposedBy", fields: [proposedBy], references: [id])
+  approvals TxProposalApproval[]
+
+  @@index([chamaId])
+  @@index([proposedBy])
+  @@index([status])
+  @@index([referenceId])
+}
+
+model TxProposalApproval {
+  id          String         @id @default(uuid())
+  proposalId  String
+  signatoryId String
+  action      ApprovalAction
+  reason      String?
+  signedAt    DateTime       @default(now())
+  deviceMeta  Json?
+
+  proposal  TxProposal @relation(fields: [proposalId], references: [id])
+  signatory User       @relation(fields: [signatoryId], references: [id])
+
+  @@unique([proposalId, signatoryId])
+  @@index([proposalId])
+  @@index([signatoryId])
 }
 
 model Contribution {
   id              String             @id @default(uuid())
   chamaId         String
-  memberId        String
+  memberId        String?
   amount          Int
   feeAmount       Int                @default(0)
   status          ContributionStatus
   mpesaRef        String?
   mpesaReceiptNum String?
+  /// BillRefNumber from M-Pesa callback. Should match chama.mpesaAccountRef.
+  billRefNumber   String?
   dueDate         DateTime
   paidAt          DateTime?
   createdAt       DateTime           @default(now())
   chama           Chama              @relation(fields: [chamaId], references: [id])
-  member          ChamaMember        @relation(fields: [memberId], references: [id])
+  member          ChamaMember?       @relation(fields: [memberId], references: [id])
 
   @@unique([mpesaRef])
   @@index([chamaId])

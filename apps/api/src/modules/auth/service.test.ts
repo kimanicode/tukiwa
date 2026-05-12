@@ -1,6 +1,6 @@
 import fastify from "fastify";
 import fastifyJwt from "@fastify/jwt";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AuthError, AuthService } from "./service";
 
 type UserRecord = {
@@ -9,6 +9,9 @@ type UserRecord = {
   fullName: string;
   nationalId: string | null;
   kycVerified: boolean;
+  isPhoneVerified: boolean;
+  isProfileComplete: boolean;
+  pinHash: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -57,6 +60,9 @@ class FakePrisma {
         fullName: create.fullName,
         nationalId: null,
         kycVerified: false,
+        isPhoneVerified: create.isPhoneVerified ?? false,
+        isProfileComplete: create.isProfileComplete ?? false,
+        pinHash: create.pinHash ?? null,
         createdAt: now,
         updatedAt: now
       };
@@ -127,8 +133,10 @@ describe("AuthService", () => {
   let sentMessages: string[];
   let now: Date;
   let app: Awaited<ReturnType<typeof createJwt>>;
+  let originalNodeEnv: string | undefined;
 
   beforeEach(async () => {
+    originalNodeEnv = process.env.NODE_ENV;
     prisma = new FakePrisma();
     redis = new FakeRedis();
     sentMessages = [];
@@ -136,7 +144,12 @@ describe("AuthService", () => {
     app = await createJwt();
   });
 
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv;
+  });
+
   it("rejects expired OTPs", async () => {
+    process.env.NODE_ENV = "production";
     const service = new AuthService(app.jwt, {
       prisma: prisma as any,
       redis,
@@ -156,6 +169,7 @@ describe("AuthService", () => {
   });
 
   it("rejects an already-used OTP", async () => {
+    process.env.NODE_ENV = "production";
     const service = new AuthService(app.jwt, {
       prisma: prisma as any,
       redis,
@@ -219,7 +233,7 @@ describe("AuthService", () => {
 
     const response = await service.devLogin("0712345678", "Kimani Test");
 
-    expect(response.user.phone).toBe("254712345678");
+    expect(response.user.phone).toBe("2547***678");
     expect(response.user.fullName).toBe("Kimani Test");
     expect(response.accessToken).toBeTruthy();
     expect(await redis.get(`auth:refresh:${response.refreshToken}`)).toBe(response.user.id);
