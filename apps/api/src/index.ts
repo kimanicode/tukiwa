@@ -33,6 +33,9 @@ export function buildApi() {
   app.register(fastifyJwt, {
     secret: process.env.JWT_SECRET ?? "development-secret-change-me"
   });
+
+  app.get("/health", async () => ({ status: "ok" }));
+
   app.register(async (websocketRoutes) => {
     websocketRoutes.get("/ws/chamas/:id", { websocket: true }, (connection, request) => {
       const { id } = request.params as { id: string };

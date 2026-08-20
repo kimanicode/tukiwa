@@ -22,6 +22,10 @@ export async function processMpesaCallback(
   data: MpesaCallbackJobData,
   deps: { prisma?: PrismaLike; emit?: typeof emitChamaEvent; notifications?: NotificationService } = {}
 ) {
+  if (!("callback" in data)) {
+    return processC2BCallback(data.c2bCallback, deps);
+  }
+
   const prisma = deps.prisma ?? defaultPrisma;
   const emit = deps.emit ?? emitChamaEvent;
   const callback = data.callback;
@@ -113,38 +117,42 @@ export async function processC2BCallback(
 ) {
   const prisma = deps.prisma ?? defaultPrisma;
   const emit = deps.emit ?? emitChamaEvent;
+  const transId = String(payload.TransID);
+  const billRefNumber = String(payload.BillRefNumber);
+  const msisdn = String(payload.MSISDN);
+  const transAmount = String(payload.TransAmount);
 
   const existing = await prisma.contribution.findFirst({
-    where: { mpesaReceiptNum: payload.TransID }
+    where: { mpesaReceiptNum: transId }
   });
   if (existing) {
-    console.info("Duplicate C2B callback ignored", { transId: payload.TransID });
+    console.info("Duplicate C2B callback ignored", { transId });
     return { processed: false, reason: "duplicate" };
   }
 
   const chama = await prisma.chama.findFirst({
-    where: { mpesaAccountRef: payload.BillRefNumber }
+    where: { mpesaAccountRef: billRefNumber }
   });
 
   if (!chama) {
     console.warn("C2B callback with unknown BillRefNumber", {
-      billRefNumber: payload.BillRefNumber,
-      transId: payload.TransID,
-      amount: payload.TransAmount,
-      phone: maskPhone(payload.MSISDN)
+      billRefNumber,
+      transId,
+      amount: transAmount,
+      phone: maskPhone(msisdn)
     });
     await prisma.auditLog.create({
       data: {
         action: "C2B_UNKNOWN_REF",
         entity: "mpesa_callback",
-        entityId: payload.TransID,
-        meta: { billRefNumber: payload.BillRefNumber, msisdn: maskPhone(payload.MSISDN) }
+        entityId: transId,
+        meta: { billRefNumber, msisdn: maskPhone(msisdn) }
       }
     });
     return { processed: false, reason: "unknown_bill_ref" };
   }
 
-  const phone = normalizeKenyanPhone(payload.MSISDN);
+  const phone = normalizeKenyanPhone(msisdn);
   const member = await prisma.chamaMember.findFirst({
     where: {
       chamaId: chama.id,
@@ -152,7 +160,7 @@ export async function processC2BCallback(
     },
     include: { user: true }
   });
-  const amountCents = Math.round(Number.parseFloat(payload.TransAmount) * 100);
+  const amountCents = Math.round(Number.parseFloat(transAmount) * 100);
 
   const contribution = await prisma.contribution.findFirst({
     where: {
@@ -170,8 +178,8 @@ export async function processC2BCallback(
         data: {
           status: ContributionStatus.PAID,
           paidAt: new Date(),
-          mpesaReceiptNum: payload.TransID,
-          billRefNumber: payload.BillRefNumber
+          mpesaReceiptNum: transId,
+          billRefNumber
         }
       });
 
@@ -183,10 +191,10 @@ export async function processC2BCallback(
           entity: "contribution",
           entityId: paid.id,
           meta: {
-            transId: payload.TransID,
+            transId,
             amount: amountCents,
-            phone: maskPhone(payload.MSISDN),
-            billRefNumber: payload.BillRefNumber
+            phone: maskPhone(msisdn),
+            billRefNumber
           }
         }
       });
@@ -201,8 +209,8 @@ export async function processC2BCallback(
         amount: amountCents,
         status: ContributionStatus.PAID,
         paidAt: new Date(),
-        mpesaReceiptNum: payload.TransID,
-        billRefNumber: payload.BillRefNumber,
+        mpesaReceiptNum: transId,
+        billRefNumber,
         dueDate: new Date()
       }
     });
@@ -213,15 +221,15 @@ export async function processC2BCallback(
         actorId: member?.userId ?? null,
         action: "C2B_CONTRIBUTION_CONFIRMED",
         entity: "contribution",
-        entityId: paid.id,
-        meta: {
-          transId: payload.TransID,
-          amount: amountCents,
-          phone: maskPhone(payload.MSISDN),
-          billRefNumber: payload.BillRefNumber
+          entityId: paid.id,
+          meta: {
+            transId,
+            amount: amountCents,
+            phone: maskPhone(msisdn),
+            billRefNumber
+          }
         }
-      }
-    });
+      });
 
     return paid;
   });
@@ -243,7 +251,7 @@ export async function processC2BCallback(
         chamaId: chama.id,
         chamaName: chama.name,
         amount: amountCents,
-        receiptNumber: payload.TransID
+        receiptNumber: transId
       },
       [Channel.WEBSOCKET, Channel.PUSH, Channel.WHATSAPP]
     );

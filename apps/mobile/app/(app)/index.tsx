@@ -81,7 +81,7 @@ export default function HomeScreen() {
           </View>
           <Text style={styles.balanceAmount}>{amountsVisible ? formatKes(summary.totalBalance) : "KES ******"}</Text>
           <Text style={styles.balanceBreakdown}>
-            Wallet: {amountsVisible ? formatKes(summary.walletBalance) : "KES ***"}  •  Chamas: {amountsVisible ? formatKes(summary.chamaBalance) : "KES ***"}
+            Wallet: {amountsVisible ? formatKes(summary.walletBalance ?? 0) : "KES ***"}  •  Chamas: {amountsVisible ? formatKes(summary.chamaBalance) : "KES ***"}
           </Text>
         </GreenPanel>
 
